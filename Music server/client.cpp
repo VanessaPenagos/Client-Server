@@ -8,35 +8,38 @@ using namespace zmqpp;
 int main(int argc, char** argv) {
 	cout << "This is the client\n";
 
-	if (argc != 4) {
-		cerr << "Should be called: " << argv[0] << " <op> operand1 operand2\n";
-		return 1;
-	}
-
 	context ctx;
 	socket s(ctx, socket_type::req);
+
+	cout << "Connecting to tcp port 5555\n";
 	s.connect("tcp://localhost:5555");
+
 	cout << "Sending  some work!\n";
+
+	message m;
+	string operation(argv[1]);
+
+	m << operation;
+	s.send(m);
+
 	message answer;
 	s.receive(answer);
 
-
 	string result;
 	answer >> result;
-	if(result == "List") {
-		int numsongs;
-		answer >> numsongs;
-		cout << "number of songs : " << numsongs;
-		for(int i = 0; i < numsongs; i++) {
+	if (result == "list") {
+		size_t numSongs;
+		answer >> numSongs;
+		cout << "Available songs: " << numSongs << endl;
+		for(int i = 0; i < numSongs; i++) {
 			string s;
 			answer >> s;
+			cout << s << endl;
 		}
+
+	} else {
+
 	}
 
-	int a;
-	answer >> a;
-	cout << "Answer is " << a << endl;
-
-    cout << "Finished\n";
 	return 0;
 }
