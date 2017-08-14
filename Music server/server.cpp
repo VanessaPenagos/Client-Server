@@ -9,22 +9,22 @@
 using namespace std;
 using namespace zmqpp;
 
-// vector<char> readFileToBytes(const string& fileName) {
-// 	ifstream ifs(fileName, ios::binary | ios::ate);
-// 	ifstream::pos_type pos = ifs.tellg();
-//
-// 	vector<char> result(pos);
-//
-// 	ifs.seekg(0, ios::beg);
-// 	ifs.read(result.data(), pos);
-//
-// 	return result;
-// }
-//
-// void fileToMesage(const string& fileName, message& msg) {
-// 	vector<char> bytes = readFileToBytes(fileName);
-// 	msg.add_raw(bytes.data(), bytes.size());
-// }
+vector<char> readFileToBytes(const string& fileName) {
+	ifstream ifs(fileName, ios::binary | ios::ate);
+	ifstream::pos_type pos = ifs.tellg();
+
+	vector<char> result(pos);
+
+	ifs.seekg(0, ios::beg);
+	ifs.read(result.data(), pos);
+
+	return result;
+}
+
+void fileToMesage(const string& fileName, message& msg) {
+	vector<char> bytes = readFileToBytes(fileName);
+	msg.add_raw(bytes.data(), bytes.size());
+}
 
 int main(int argc, char** argv) {
   context ctx;
@@ -58,6 +58,10 @@ int main(int argc, char** argv) {
       m >> songName;
       cout << "sending song " << songName
            << " at " << songs[songName] << endl;
+			message n;
+			n << "file";
+			fileToMesage(songs[songName], n);
+			s.send(n);
     } else {
       cout << "Invalid operation requested!!\n";
     }
