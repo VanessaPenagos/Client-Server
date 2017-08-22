@@ -28,13 +28,32 @@ void fileToMesage(const string& fileName, message& msg) {
 
 
 string split(string s, char del){
-   string nameSong = "";
-   for (int i = 0; i < int(s.size()); i++) {
-	if (s[i] != del)
-	    nameSong += s[i];
-	else
-	    return nameSong;  
+  string nameSong = "";
+  for (int i = 0; i < int(s.size()); i++) {
+  	if (s[i] != del)
+      nameSong += s[i];
+  	else
+      return nameSong;  
    }
+}
+
+unordered_map<string,string> readDir(string dir, unordered_map<string,string> songs) {
+  DIR * folder;
+  struct dirent * file;
+  string file_name, key;
+  string path = "/" + dir;
+
+  if ((folder = opendir(dir.c_str()))) { 
+    while ((file = readdir(folder))) {
+      file_name = file->d_name;
+      if ( file_name.find(".ogg") != string::npos) {
+        songs[file_name] = path + file_name;
+        cout << file_name << endl;  
+      }
+    }
+  }
+  return songs;
+  closedir(folder);
 }
 
 int main(int argc, char** argv) {
@@ -44,6 +63,7 @@ int main(int argc, char** argv) {
 
   string path(argv[1]);
   unordered_map<string,string> songs;
+  //songs = readDir(path, songs);
   songs["s1"] = path + "s1.ogg";
   songs["s2"] = path + "s2.ogg";
   songs["s3"] = path + "s3.ogg";
