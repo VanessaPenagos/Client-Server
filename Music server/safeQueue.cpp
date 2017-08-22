@@ -7,8 +7,7 @@
 
 // A threadsafe-queue.
 template <class T>
-class SafeQueue
-{
+class SafeQueue {
 public:
   SafeQueue(void)
     : q()
@@ -16,12 +15,10 @@ public:
     , c()
   {}
 
-  ~SafeQueue(void)
-  {}
+  ~SafeQueue(void) {}
 
   // Add an element to the queue.
-  void enqueue(T t)
-  {
+  void enqueue(T t) {
     std::lock_guard<std::mutex> lock(m);
     q.push(t);
     c.notify_one();
@@ -29,11 +26,9 @@ public:
 
   // Get the "front"-element.
   // If the queue is empty, wait till a element is avaiable.
-  T dequeue(void)
-  {
+  T dequeue(void) {
     std::unique_lock<std::mutex> lock(m);
-    while(q.empty())
-    {
+    while(q.empty()) {
       // release lock as long as the wait and reaquire it afterwards.
       c.wait(lock);
     }
