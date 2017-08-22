@@ -17,7 +17,7 @@ void list_dir() {
 		}
 	}
 	else {
-		cout << "No se pudo abrir"<<endl;           
+		cout << "No se pudo abrir el directorio " << endl;           
 	}
 	closedir(folder);
 }
