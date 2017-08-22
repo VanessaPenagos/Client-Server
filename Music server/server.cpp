@@ -28,13 +28,13 @@ void fileToMesage(const string& fileName, message& msg) {
 
 
 string split(string s, char del){
-	string nameSong = "";
-	for (int i = 0; i < int(s.size()); i++) {
-        if (s[i] != del)
-            nameSong += s[i];
+   string nameSong = "";
+   for (int i = 0; i < int(s.size()); i++) {
+	if (s[i] != del)
+	    nameSong += s[i];
 	else
 	    return nameSong;  
-  	}
+   }
 }
 
 int main(int argc, char** argv) {
