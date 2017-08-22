@@ -11,7 +11,7 @@ void list_dir() {
 	if (folder = opendir(dir.c_str())) { 
 		while (file = readdir(folder)) {
 			file_name = file->d_name;
-			if ( file_name.find(".ogg") != string::npos && file_name != "." && file_name != "..") {
+			if ( file_name.find(".ogg") != string::npos) {
 				cout << file->d_name << endl;  
 			}
 		}
