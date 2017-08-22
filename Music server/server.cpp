@@ -26,6 +26,17 @@ void fileToMesage(const string& fileName, message& msg) {
 	msg.add_raw(bytes.data(), bytes.size());
 }
 
+
+string split(string s, char del){
+	string nameSong = "";
+	for (int i = 0; i < int(s.size()); i++) {
+        if (s[i] != del)
+            nameSong += s[i];
+	else
+	    return nameSong;  
+  	}
+}
+
 int main(int argc, char** argv) {
   context ctx;
   socket s(ctx, socket_type::rep);
