@@ -1,12 +1,14 @@
 #include <SFML/Audio.hpp>
-#include <fstream>
 #include <iostream>
 #include <string>
 #include <zmqpp/zmqpp.hpp>
+#include <fstream>
+#include <thread>
 
 using namespace std;
-using namespace zmqpp;
 using namespace sf;
+using namespace zmqpp;
+
 
 void messageToFile(const message &msg, const string &fileName) {
   const void *data;
@@ -27,12 +29,13 @@ int main() {
   Music music;
 
   while (true) {
-    cout << "Operacion? " << endl;
+    cout << "Operation ? " << endl;
     string operation;
     cin >> operation;
 
     message m;
     m << operation;
+    
 
     if (operation == "play") {
       string file;

@@ -11,4 +11,4 @@ client: client.cpp
 	$(CC) $(FLAGS) client.cpp $(LIBS) -o client.out
 
 clean:
-	rm client.out server.out
+	rm client.out server.out song.ogg

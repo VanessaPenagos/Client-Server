@@ -34,20 +34,21 @@ string split(string s, char del){
   	if (s[i] != del)
       nameSong += s[i];
   	else
-      return nameSong;
-   }  
+			break;
+   }
+	 return nameSong;
 }
 
 unordered_map<string,string> readDir(string dir, unordered_map<string,string> songs) {
   DIR * folder;
   struct dirent * file;
   string file_name, key;
-  if ((folder = opendir(dir.c_str()))) { 
+  if ((folder = opendir(dir.c_str()))) {
     while ((file = readdir(folder))) {
       file_name = file->d_name;
       if ( file_name.find(".ogg") != string::npos) {
         key = split(file_name,'.');
-        songs[key] = dir + "/" + file_name;  
+        songs[key] = dir + "/" + file_name;
       }
     }
   }
