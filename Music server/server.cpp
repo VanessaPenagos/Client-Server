@@ -63,9 +63,6 @@ int main(int argc, char** argv) {
   string path(argv[1]);
   unordered_map<string,string> songs;
   songs = readDir(path, songs);
-  // songs["s1"] = path + "s1.ogg";
-  // songs["s2"] = path + "s2.ogg";
-  // songs["s3"] = path + "s3.ogg";
 
   cout << "Start serving requests!\n";
   while(true) {
