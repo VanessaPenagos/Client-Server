@@ -50,26 +50,24 @@ int main() {
     string result;
     answer >> result;
     if (result == "list") {
-			cout << "Hola" << endl;
-     	size_t numSongs;
-      answer >> numSongs;
-      cout << "Available songs: " << numSongs << endl;
-      for (size_t i = 0; i < numSongs; i++) {
-        string s;
-        answer >> s;
-        cout << s << endl;
-      }
-
-     } else if (result == "file") {
-      messageToFile(answer, "song.ogg");
-      music.openFromFile("song.ogg");
-      music.play();
-      while (music.getStatus() == SoundSource::Playing) {
-        cout << "suena!" << endl;
-      }
-    } else {
-      cout << "Don't know what to do!!!" << endl;
-    }
+    	size_t numSongs;
+    	answer >> numSongs;
+    	cout << "Available songs: " << numSongs << endl;
+		for (size_t i = 0; i < numSongs; i++) {
+			string s;
+			answer >> s;
+			cout << s << endl;
+		}
+	} else if (result == "file") {
+		messageToFile(answer, "song.ogg");
+		music.openFromFile("song.ogg");
+		music.play();
+		while (music.getStatus() == SoundSource::Playing) {
+			cout << "suena!" << endl;
+		}
+    	} else {
+      	cout << "Don't know what to do!!!" << endl;
+    	}
    }
   return 0;
 }

@@ -4,6 +4,7 @@
 #include <cassert>
 #include <unordered_map>
 #include <fstream>
+#include <dirent.h>
 
 
 using namespace std;
@@ -33,27 +34,25 @@ string split(string s, char del){
   	if (s[i] != del)
       nameSong += s[i];
   	else
-      return nameSong;  
-   }
+      return nameSong;
+   }  
 }
 
 unordered_map<string,string> readDir(string dir, unordered_map<string,string> songs) {
   DIR * folder;
   struct dirent * file;
   string file_name, key;
-  string path = "/" + dir;
-
   if ((folder = opendir(dir.c_str()))) { 
     while ((file = readdir(folder))) {
       file_name = file->d_name;
       if ( file_name.find(".ogg") != string::npos) {
-        songs[file_name] = path + file_name;
-        cout << file_name << endl;  
+        key = split(file_name,'.');
+        songs[key] = dir + "/" + file_name;  
       }
     }
   }
-  return songs;
   closedir(folder);
+  return songs;
 }
 
 int main(int argc, char** argv) {
@@ -63,10 +62,10 @@ int main(int argc, char** argv) {
 
   string path(argv[1]);
   unordered_map<string,string> songs;
-  //songs = readDir(path, songs);
-  songs["s1"] = path + "s1.ogg";
-  songs["s2"] = path + "s2.ogg";
-  songs["s3"] = path + "s3.ogg";
+  songs = readDir(path, songs);
+  // songs["s1"] = path + "s1.ogg";
+  // songs["s2"] = path + "s2.ogg";
+  // songs["s3"] = path + "s3.ogg";
 
   cout << "Start serving requests!\n";
   while(true) {
