@@ -77,7 +77,7 @@ int main(int argc, char** argv) {
 
     if (op == "list") {  // Use case 1: Send the songs
       message n;
-      n << "list" << songs.size();
+      n << songs.size();
       for(const auto& p : songs)
         n << p.first;
       s.send(n);
@@ -95,7 +95,6 @@ int main(int argc, char** argv) {
       cout << "Invalid operation requested!!\n";
     }
   }
-
   cout << "Finished\n";
   return 0;
 }

@@ -19,6 +19,38 @@ void messageToFile(const message &msg, const string &fileName) {
   ofs.write((char *)data, size);
 }
 
+void playSong(string nameSong, Music *music) {
+  context ctx;
+  socket s(ctx, socket_type::req);
+  s.connect("tcp://localhost:5555");
+  message m;
+  message answer;
+  string result;
+
+  m << "play";
+  m << nameSong;
+  s.send(m);
+  s.receive(answer);
+  answer >> result;
+  if(result == "file") {
+    messageToFile(answer, "song.ogg");
+    music->openFromFile("song.ogg");
+    music->play();
+  }
+}
+
+void playPlaylist(SafeQueue<string> &q, Music *music) {
+  int sizeQueue = q.size();
+  while(sizeQueue--){
+    string nextSong;
+    nextSong = q.dequeue();
+    playSong(nextSong, music);
+    while (music->getStatus() == SoundSource::Playing) {
+			continue;
+    }
+  }
+}
+
 int main() {
   cout << "This is the client\n";
 
@@ -26,72 +58,81 @@ int main() {
   socket s(ctx, socket_type::req);
   cout << "Connecting to tcp port 5555\n";
   s.connect("tcp://localhost:5555");
+
   Music music;
   SafeQueue<string> playList;
+  vector<string> songs;
+  message m;
+  message answer;
+  size_t numSongs;
+  string song, nameSong;
+
+  m << "list";
+  s.send(m);
+  s.receive(answer);
+  answer >> numSongs;
+
+  for (size_t i = 0; i < numSongs; i++) {
+    answer >> song;
+    songs.push_back(song);
+  }
 
   while (true) {
     cout << "Operation ? " << endl;
     string operation;
     cin >> operation;
 
-    message m;
-    message answer;
-    
+
     if (operation == "add"){
     	string addSong;
     	cout << "Name song: " << endl;
     	cin >> addSong;
     	playList.enqueue(addSong);
-    	cout << "Encolada" << endl;
+    	cout << "Ready" << endl;
     }
 
-    if (operation == "playlist"){
-    	string songlist;
-    	if (playList.isEmpty()){
-    		cout << "Playlist empty" << endl;
-    	} else {
-    		int playListSize = playList.size();
-    		for (int i = 0; i < playListSize; ++i) {
-		    	songlist = playList.dequeue();
-		    	cout << songlist << endl;
-		    	playList.enqueue(songlist);
-    		}
-    	}
+    if (operation == "list") {
+      cin >> operation;
+      if(operation == "songs") {
+      }
+      if (operation == "playlist") {
+        string songlist;
+        if (playList.isEmpty()){
+          cout << "Playlist empty" << endl;
+        } else {
+          int playListSize = playList.size();
+          for (int i = 0; i < playListSize; ++i) {
+            songlist = playList.dequeue();
+            cout << songlist << endl;
+            playList.enqueue(songlist);
+          }
+        }
+      }
     }
+    if(operation == "play") {
+      if(operation == "songs") {
+        cout << "Name song? " << endl;
+        cin >> nameSong;
+        playSong(nameSong, &music);
+      }
 
-    if (operation == "play") {
-    	m << operation;
-    	string file;
-    	cin >> file;
-    	m << file;
-      	s.send(m);
-      	s.receive(answer);
-    } else if (operation == "exit") {
+      if(operation == "play") { // Cambiar por playlist
+        cout << "Si la llame " << endl;
+        playPlaylist(ref(playList), &music);
+      }
+    }
+    if (operation == "exit") {
       return 0;
     }
 
- //    string result;
- //    answer >> result;
- //    if (result == "list") {
- //    	size_t numSongs;
- //    	answer >> numSongs;
- //    	cout << "Available songs: " << numSongs << endl;
-	// 	for (size_t i = 0; i < numSongs; i++) {
-	// 		string s;
-	// 		answer >> s;
-	// 		cout << s << endl;
-	// 	}
-	// } else if (result == "file") {
-	// 	messageToFile(answer, "song.ogg");
-	// 	music.openFromFile("song.ogg");
-	// 	music.play();
-	// 	while (music.getStatus() == SoundSource::Playing) {
-	// 		cout << "suena!" << endl;
-	// 	}
- //    	} else if (result == "added") {}
- //    	else{
- //      	cout << "Don't know what to do!!!" << endl;
- //    	}
-   }
+
+    // add to play if (operation == "playlist") {}
+    //  add to list if ( operation == "songs") {}
+    // if (operation == "delete") {}
+    //
+    // if (operation == "next") {}
+    //
+    // if (operation == "stop") {}
+}
   return 0;
 }
