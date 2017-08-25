@@ -4,11 +4,11 @@
 #include <zmqpp/zmqpp.hpp>
 #include <fstream>
 #include <thread>
+#include "safeQueue.h"
 
 using namespace std;
 using namespace sf;
 using namespace zmqpp;
-
 
 void messageToFile(const message &msg, const string &fileName) {
   const void *data;
@@ -27,6 +27,7 @@ int main() {
   cout << "Connecting to tcp port 5555\n";
   s.connect("tcp://localhost:5555");
   Music music;
+  SafeQueue<string> playList;
 
   while (true) {
     cout << "Operation ? " << endl;
@@ -34,43 +35,63 @@ int main() {
     cin >> operation;
 
     message m;
-    m << operation;
+    message answer;
     
+    if (operation == "add"){
+    	string addSong;
+    	cout << "Name song: " << endl;
+    	cin >> addSong;
+    	playList.enqueue(addSong);
+    	cout << "Encolada" << endl;
+    }
+
+    if (operation == "playlist"){
+    	string songlist;
+    	if (playList.isEmpty()){
+    		cout << "Playlist empty" << endl;
+    	} else {
+    		int playListSize = playList.size();
+    		for (int i = 0; i < playListSize; ++i) {
+		    	songlist = playList.dequeue();
+		    	cout << songlist << endl;
+		    	playList.enqueue(songlist);
+    		}
+    	}
+    }
 
     if (operation == "play") {
-      string file;
-      cin >> file;
-      m << file;
+    	m << operation;
+    	string file;
+    	cin >> file;
+    	m << file;
+      	s.send(m);
+      	s.receive(answer);
     } else if (operation == "exit") {
       return 0;
     }
 
-    s.send(m);
-
-    message answer;
-    s.receive(answer);
-
-    string result;
-    answer >> result;
-    if (result == "list") {
-    	size_t numSongs;
-    	answer >> numSongs;
-    	cout << "Available songs: " << numSongs << endl;
-		for (size_t i = 0; i < numSongs; i++) {
-			string s;
-			answer >> s;
-			cout << s << endl;
-		}
-	} else if (result == "file") {
-		messageToFile(answer, "song.ogg");
-		music.openFromFile("song.ogg");
-		music.play();
-		while (music.getStatus() == SoundSource::Playing) {
-			cout << "suena!" << endl;
-		}
-    	} else {
-      	cout << "Don't know what to do!!!" << endl;
-    	}
+ //    string result;
+ //    answer >> result;
+ //    if (result == "list") {
+ //    	size_t numSongs;
+ //    	answer >> numSongs;
+ //    	cout << "Available songs: " << numSongs << endl;
+	// 	for (size_t i = 0; i < numSongs; i++) {
+	// 		string s;
+	// 		answer >> s;
+	// 		cout << s << endl;
+	// 	}
+	// } else if (result == "file") {
+	// 	messageToFile(answer, "song.ogg");
+	// 	music.openFromFile("song.ogg");
+	// 	music.play();
+	// 	while (music.getStatus() == SoundSource::Playing) {
+	// 		cout << "suena!" << endl;
+	// 	}
+ //    	} else if (result == "added") {}
+ //    	else{
+ //      	cout << "Don't know what to do!!!" << endl;
+ //    	}
    }
   return 0;
 }

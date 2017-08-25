@@ -48,7 +48,7 @@ unordered_map<string,string> readDir(string dir, unordered_map<string,string> so
       file_name = file->d_name;
       if ( file_name.find(".ogg") != string::npos) {
         key = split(file_name,'.');
-        songs[key] = dir + "/" + file_name;
+        songs[key] = dir + file_name;
       }
     }
   }
@@ -74,6 +74,7 @@ int main(int argc, char** argv) {
     m >> op;
 
     cout << "Action:  " << op << endl;
+
     if (op == "list") {  // Use case 1: Send the songs
       message n;
       n << "list" << songs.size();
