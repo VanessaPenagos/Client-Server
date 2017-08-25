@@ -39,15 +39,22 @@ void playSong(string nameSong, Music *music) {
   }
 }
 
-void playPlaylist(SafeQueue<string> &q, Music *music) {
-  int sizeQueue = q.size();
-  while(sizeQueue--){
+void startPlaylist(SafeQueue<string> &q, Music *music, bool &next, bool &stop) {
+  while(true){
     string nextSong;
     nextSong = q.dequeue();
+    q.enqueue(nextSong);
     playSong(nextSong, music);
-    while (music->getStatus() == SoundSource::Playing) {
+    cout << "Next en la funcion:" << next << endl;
+    while (music->getStatus() == SoundSource::Playing && !next && !stop) {
 			continue;
     }
+    if(stop) {
+      music->stop();
+      stop = false;
+      break;
+    }
+    next = false;
   }
 }
 
@@ -71,6 +78,7 @@ int main() {
   s.send(m);
   s.receive(answer);
   answer >> numSongs;
+  bool next, stop = false;
 
   for (size_t i = 0; i < numSongs; i++) {
     answer >> song;
@@ -83,6 +91,20 @@ int main() {
     cin >> operation;
 
 
+    if (operation == "list") {
+      string songlist;
+      if (playList.isEmpty()){
+        cout << "Playlist empty" << endl;
+      } else {
+        int playListSize = playList.size();
+        for (int i = 0; i < playListSize; ++i) {
+          songlist = playList.dequeue();
+          cout << songlist << endl;
+          playList.enqueue(songlist);
+        }
+      }
+    }
+
     if (operation == "add"){
     	string addSong;
     	cout << "Name song: " << endl;
@@ -91,48 +113,29 @@ int main() {
     	cout << "Ready" << endl;
     }
 
-    if (operation == "list") {
-      cin >> operation;
-      if(operation == "songs") {
-      }
-      if (operation == "playlist") {
-        string songlist;
-        if (playList.isEmpty()){
-          cout << "Playlist empty" << endl;
-        } else {
-          int playListSize = playList.size();
-          for (int i = 0; i < playListSize; ++i) {
-            songlist = playList.dequeue();
-            cout << songlist << endl;
-            playList.enqueue(songlist);
-          }
-        }
-      }
-    }
-    if(operation == "play") {
-      if(operation == "songs") {
-        cout << "Name song? " << endl;
-        cin >> nameSong;
-        playSong(nameSong, &music);
-      }
+    if (operation == "next") next = true;
 
-      if(operation == "play") { // Cambiar por playlist
-        cout << "Si la llame " << endl;
-        playPlaylist(ref(playList), &music);
-      }
-    }
-    if (operation == "exit") {
-      return 0;
-    }
+    if (operation == "stop") stop = true;
 
+    if(operation == "play") thread (startPlaylist, ref(playList), &music, ref(next), ref(stop)).detach();
+
+    if (operation == "exit") return 0;
+
+    //REPRODUCIR CANCIONES
+    // if(operation == "songs") {
+    //   cout << "Name song? " << endl;
+    //   cin >> nameSong;
+    //   playSong(nameSong, &music);
+    // }
+    //LISTAR CANCIONES
+    // cin >> operation;
+    // if(operation == "songs") {
+    // }
+    // if (operation == "playlist") {
 
     // add to play if (operation == "playlist") {}
     //  add to list if ( operation == "songs") {}
     // if (operation == "delete") {}
-    //
-    // if (operation == "next") {}
-    //
-    // if (operation == "stop") {}
-}
+  }
   return 0;
 }
