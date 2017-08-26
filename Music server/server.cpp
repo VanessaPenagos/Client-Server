@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <fstream>
 #include <dirent.h>
+#include <cmath>
 
 
 using namespace std;
@@ -22,9 +23,13 @@ vector<char> readFileToBytes(const string& fileName) {
 	return result;
 }
 
-void fileToMesage(const string& fileName, message& msg) {
-	vector<char> bytes = readFileToBytes(fileName);
-	msg.add_raw(bytes.data(), bytes.size());
+void fileToMesage(const string& fileName, message& msg, vector<char> bytes, int part) {
+  vector<char> partOfBytes;
+  for (int i = part-1; i < 512000*part && i != bytes.size(); ++i) {
+    partOfBytes.push_back(bytes[i]);
+  }
+	msg.add_raw(partOfBytes.data(), partOfBytes.size());
+  partOfBytes.clear();
 }
 
 
@@ -64,13 +69,14 @@ int main(int argc, char** argv) {
   string path(argv[1]);
   unordered_map<string,string> songs;
   songs = readDir(path, songs);
-
+  
   cout << "Start serving requests!\n";
   while(true) {
     message m;
     s.receive(m);
 
     string op;
+    int part;
     m >> op;
 
     cout << "Action:  " << op << endl;
@@ -89,7 +95,12 @@ int main(int argc, char** argv) {
            << " at " << songs[songName] << endl;
 			message n;
 			n << "file";
-			fileToMesage(songs[songName], n);
+
+      vector<char> bytes = readFileToBytes(songs[songName]);
+      int pieceOfSong = ceil(bytes.size()/512000);
+      m >> part;
+
+			fileToMesage(songs[songName], n, bytes, part);
 			s.send(n);
     } else {
       cout << "Invalid operation requested!!\n";

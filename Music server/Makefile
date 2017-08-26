@@ -1,6 +1,6 @@
 CC = g++
 FLAGS = -O2 -std=c++11 -Wall
-LIBS = -lzmqpp -lzmq -lsfml-audio -lpthread
+LIBS = -lzmqpp -lzmq -lsfml-audio -lpthread 
 
 all: server client
 
