@@ -19,7 +19,7 @@ void messageToFile(const message &msg, const string &fileName) {
   ofs.write((char *)data, size);
 }
 
-void playSong(string nameSong, Music *music, int part) {
+void playSong(string nameSong, Music *music) {
   context ctx;
   socket s(ctx, socket_type::req);
   s.connect("tcp://localhost:5555");
@@ -27,7 +27,8 @@ void playSong(string nameSong, Music *music, int part) {
   message answer;
   string result;
 
-  m << "play" << nameSong << part ;
+  m << "play";
+  m << nameSong;
   s.send(m);
   s.receive(answer);
   answer >> result;
@@ -43,7 +44,8 @@ void startPlaylist(SafeQueue<string> &q, Music *music, bool &next, bool &stop) {
     string nextSong;
     nextSong = q.dequeue();
     q.enqueue(nextSong);
-    playSong(nextSong, music,2);
+    playSong(nextSong, music);
+    cout << "Next en la funcion:" << next << endl;
     while (music->getStatus() == SoundSource::Playing && !next && !stop) {
 			continue;
     }
@@ -58,6 +60,7 @@ void startPlaylist(SafeQueue<string> &q, Music *music, bool &next, bool &stop) {
 
 int main() {
   cout << "This is the client\n";
+  cout << "Hola, prueba" << endl;
 
   context ctx;
   socket s(ctx, socket_type::req);
