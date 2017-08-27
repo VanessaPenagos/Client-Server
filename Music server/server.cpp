@@ -22,8 +22,8 @@ vector<char> readFileToBytes(const string& fileName) {
 	return result;
 }
 
-void fileToMesage(const string& fileName, message& msg) {
-	vector<char> bytes = readFileToBytes(fileName);
+void fileToMesage(const string& fileName, message& msg, int part) {
+  vector<char> bytes = readFileToBytes("Music/"+fileName+"-"+to_string(part)+".ogg");
 	msg.add_raw(bytes.data(), bytes.size());
 }
 
@@ -39,7 +39,7 @@ string split(string s, char del){
 	 return nameSong;
 }
 
-unordered_map<string,string> readDir(string dir, unordered_map<string,string> songs) {
+void readDir(string dir, unordered_map<string,int> &songs) {
   DIR * folder;
   struct dirent * file;
   string file_name, key;
@@ -47,13 +47,16 @@ unordered_map<string,string> readDir(string dir, unordered_map<string,string> so
     while ((file = readdir(folder))) {
       file_name = file->d_name;
       if ( file_name.find(".ogg") != string::npos) {
-        key = split(file_name,'.');
-        songs[key] = dir + file_name;
+        key = split(file_name,'-');
+        if (songs.count(key)){
+          songs[key]++;
+        } else {
+          songs[key] = 1;
+        }
       }
     }
   }
   closedir(folder);
-  return songs;
 }
 
 int main(int argc, char** argv) {
@@ -62,8 +65,8 @@ int main(int argc, char** argv) {
   s.bind("tcp://*:5555");
 
   string path(argv[1]);
-  unordered_map<string,string> songs;
-  songs = readDir(path, songs);
+  unordered_map<string,int> songs;
+  readDir(path, songs);
 
   cout << "Start serving requests!\n";
   while(true) {
@@ -88,9 +91,20 @@ int main(int argc, char** argv) {
       cout << "sending song " << songName
            << " at " << songs[songName] << endl;
 			message n;
-			n << "file";
-			fileToMesage(songs[songName], n);
+			n << songs[songName] << "file";
+			fileToMesage(songName, n, 0);
 			s.send(n);
+    } else if (op == "part") {
+      string songName;
+      int part;
+      m >> songName;
+      m >> part;
+      cout << "sending song " << songName
+           << " part " << songs[songName] << endl;
+      message n;
+      n << "file";
+      fileToMesage(songName, n, part);
+      s.send(n);
     } else {
       cout << "Invalid operation requested!!\n";
     }

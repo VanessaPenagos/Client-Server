@@ -1,39 +1,39 @@
 #include <SFML/Audio.hpp>
+#include <SFML/System/Time.hpp>
 #include <iostream>
 #include <string>
 #include <zmqpp/zmqpp.hpp>
 #include <fstream>
 #include <thread>
+#include <unistd.h>
 #include "safeQueue.h"
 
 using namespace std;
 using namespace sf;
 using namespace zmqpp;
 
-void messageToFile(const message &msg, const string &fileName) {
+void messageToFile(const message &msg, bool add) {
   const void *data;
+  string fileName = "song.ogg";
   msg.get(&data, 1);
   size_t size = msg.size(1);
 
-  ofstream ofs(fileName, ios::binary);
-  ofs.write((char *)data, size);
+  if(add) {
+  	ofstream ofs("song.ogg", ios::binary | ios_base::app);
+		ofs.write((char*)data, size);
+  } else {
+  	ofstream ofs(fileName, ios::binary);
+  	ofs.write((char *)data, size);
+  }
 }
 
-void playSong(string nameSong, Music *music) {
-  context ctx;
-  socket s(ctx, socket_type::req);
-  s.connect("tcp://localhost:5555");
-  message m;
-  message answer;
+void playSong(Music *music, message &answer) {
   string result;
-
-  m << "play";
-  m << nameSong;
-  s.send(m);
-  s.receive(answer);
   answer >> result;
+  cout << "Aqui estoy !" << endl;
   if(result == "file") {
-    messageToFile(answer, "song.ogg");
+  	cout << "Si file hurra!" << endl;
+    messageToFile(answer, false);
     music->openFromFile("song.ogg");
     music->play();
   }
@@ -41,13 +41,36 @@ void playSong(string nameSong, Music *music) {
 
 void startPlaylist(SafeQueue<string> &q, Music *music, bool &next, bool &stop) {
   while(true){
-    string nextSong;
+    string nextSong, result;
+	  int parts, part = 1;
     nextSong = q.dequeue();
     q.enqueue(nextSong);
-    playSong(nextSong, music);
-    cout << "Next en la funcion:" << next << endl;
-    while (music->getStatus() == SoundSource::Playing && !next && !stop) {
-			continue;
+	  context ctx;
+	  socket s(ctx, socket_type::req);
+	  s.connect("tcp://localhost:5555");
+	  message m;
+	  message answer;
+	  float x = 10.0;
+
+	  m << "play";
+	  m << nextSong;
+	  s.send(m);		//Se envia al servidor la solicitud de reproducir junto al nombre de la cancion
+	  s.receive(answer);	//Se recibe el numero de partes que tiene la cancion
+	  answer >> parts;
+    playSong(music, answer);
+    while (music->getStatus() == SoundSource::Playing && !next && !stop && part < parts) {
+    	if ( (music->getPlayingOffset().asSeconds() - x )== music->getDuration().asSeconds()){
+    		m << "part";
+    		m << nextSong;
+    		m << part;
+    		s.send(m);
+    		s.receive(answer);
+    		answer >> result;
+    		messageToFile(answer, true);
+    		part++;
+    	} else {
+				continue;
+    	}
     }
     if(stop) {
       music->stop();
@@ -60,7 +83,6 @@ void startPlaylist(SafeQueue<string> &q, Music *music, bool &next, bool &stop) {
 
 int main() {
   cout << "This is the client\n";
-  cout << "Hola, prueba" << endl;
 
   context ctx;
   socket s(ctx, socket_type::req);
