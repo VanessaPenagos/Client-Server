@@ -42,40 +42,37 @@ void startPlaylist(SafeQueue<string> &q, Music *music, bool &next, bool &stop) {
 	s.connect("tcp://localhost:5555");
 	message m;
 	message answer;
-	float x = 10.0;
+	double x = 10.0000;
 	string nextSong, result;
 	int parts, part = 1;
 
   while(true){
   	nextSong = q.dequeue();
-	  q.enqueue(nextSong);	
-		m << "play";
-		m << nextSong;
+	  q.enqueue(nextSong);
+		m << "play" << nextSong;
 		s.send(m);		//Se envia al servidor la solicitud de reproducir junto al nombre de la cancion
 		s.receive(answer);	//Se recibe el numero de partes que tiene la cancion
 		answer >> parts;
 		playSong(music, answer);
-    while (music->getStatus() == SoundSource::Playing && !next && !stop && part < parts) {
-    	if ( (music->getPlayingOffset().asSeconds() - x ) == music->getDuration().asSeconds()){
-    		m << "part";
-    		m << nextSong;
-    		m << part;
+    while (music->getStatus() == SoundSource::Playing && !next && !stop ) {
+    	if ( (music->getDuration().asSeconds() - x ) >= music->getPlayingOffset().asSeconds()){
+    		m << "part" << nextSong << part;
     		s.send(m);
+        part++;
     		s.receive(answer);
     		answer >> result;
     		messageToFile(answer, true);
-    		part++;
-    	} else {
-				continue;
+
     	}
+      if(stop) {
+        music->stop();
+        stop = false;
+        break;
+      }
     }
-    if(stop) {
-      music->stop();
-      stop = false;
-      break;
-    }
-    next = false;
+      next = false;
    }
+
 }
 
 int main() {
@@ -140,22 +137,6 @@ int main() {
     if(operation == "play") thread (startPlaylist, ref(playList), &music, ref(next), ref(stop)).detach();
 
     if (operation == "exit") return 0;
-
-    //REPRODUCIR CANCIONES
-    // if(operation == "songs") {
-    //   cout << "Name song? " << endl;
-    //   cin >> nameSong;
-    //   playSong(nameSong, &music);
-    // }
-    //LISTAR CANCIONES
-    // cin >> operation;
-    // if(operation == "songs") {
-    // }
-    // if (operation == "playlist") {
-
-    // add to play if (operation == "playlist") {}
-    //  add to list if ( operation == "songs") {}
-    // if (operation == "delete") {}
   }
   return 0;
 }
