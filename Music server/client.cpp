@@ -14,25 +14,22 @@ using namespace zmqpp;
 
 void messageToFile(const message &msg, bool add) {
   const void *data;
-  string fileName = "song.ogg";
-  msg.get(&data, 1);
-  size_t size = msg.size(1);
+  msg.get(&data, 2);
+  size_t size = msg.size(2);
 
   if(add) {
   	ofstream ofs("song.ogg", ios::binary | ios_base::app);
 		ofs.write((char*)data, size);
   } else {
-  	ofstream ofs(fileName, ios::binary);
-  	ofs.write((char *)data, size);
+  	ofstream ofs("song.ogg", ios::binary);
+  	ofs.write((char*)data, size);
   }
 }
 
 void playSong(Music *music, message &answer) {
-  string result;
+	string result;
   answer >> result;
-  cout << "Aqui estoy !" << endl;
   if(result == "file") {
-  	cout << "Si file hurra!" << endl;
     messageToFile(answer, false);
     music->openFromFile("song.ogg");
     music->play();
@@ -40,26 +37,26 @@ void playSong(Music *music, message &answer) {
 }
 
 void startPlaylist(SafeQueue<string> &q, Music *music, bool &next, bool &stop) {
-  while(true){
-    string nextSong, result;
-	  int parts, part = 1;
-    nextSong = q.dequeue();
-    q.enqueue(nextSong);
-	  context ctx;
-	  socket s(ctx, socket_type::req);
-	  s.connect("tcp://localhost:5555");
-	  message m;
-	  message answer;
-	  float x = 10.0;
+	context ctx;
+	socket s(ctx, socket_type::req);
+	s.connect("tcp://localhost:5555");
+	message m;
+	message answer;
+	float x = 10.0;
+	string nextSong, result;
+	int parts, part = 1;
 
-	  m << "play";
-	  m << nextSong;
-	  s.send(m);		//Se envia al servidor la solicitud de reproducir junto al nombre de la cancion
-	  s.receive(answer);	//Se recibe el numero de partes que tiene la cancion
-	  answer >> parts;
-    playSong(music, answer);
+  while(true){
+  	nextSong = q.dequeue();
+	  q.enqueue(nextSong);	
+		m << "play";
+		m << nextSong;
+		s.send(m);		//Se envia al servidor la solicitud de reproducir junto al nombre de la cancion
+		s.receive(answer);	//Se recibe el numero de partes que tiene la cancion
+		answer >> parts;
+		playSong(music, answer);
     while (music->getStatus() == SoundSource::Playing && !next && !stop && part < parts) {
-    	if ( (music->getPlayingOffset().asSeconds() - x )== music->getDuration().asSeconds()){
+    	if ( (music->getPlayingOffset().asSeconds() - x ) == music->getDuration().asSeconds()){
     		m << "part";
     		m << nextSong;
     		m << part;
@@ -78,7 +75,7 @@ void startPlaylist(SafeQueue<string> &q, Music *music, bool &next, bool &stop) {
       break;
     }
     next = false;
-  }
+   }
 }
 
 int main() {

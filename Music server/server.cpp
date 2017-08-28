@@ -11,6 +11,7 @@ using namespace std;
 using namespace zmqpp;
 
 vector<char> readFileToBytes(const string& fileName) {
+  cout << fileName << " File" << endl;
 	ifstream ifs(fileName, ios::binary | ios::ate);
 	ifstream::pos_type pos = ifs.tellg();
 
@@ -88,8 +89,8 @@ int main(int argc, char** argv) {
       // Use case 2: Send song file
       string songName;
       m >> songName;
-      cout << "sending song " << songName
-           << " at " << songs[songName] << endl;
+      cout << "sending parts of " << songName
+           << " number: " << songs[songName] << endl;
 			message n;
 			n << songs[songName] << "file";
 			fileToMesage(songName, n, 0);
@@ -102,7 +103,7 @@ int main(int argc, char** argv) {
       cout << "sending song " << songName
            << " part " << songs[songName] << endl;
       message n;
-      n << "file";
+      n << songs[songName] << "file";
       fileToMesage(songName, n, part);
       s.send(n);
     } else {
