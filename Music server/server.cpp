@@ -16,8 +16,7 @@ vector<char> readFileToBytes(const string& fileName) {
 	ifstream::pos_type pos = ifs.tellg();
 
 	vector<char> result(pos);
-
-	ifs.seekg(0, ios::beg);
+  ifs.seekg(0, ios::beg);
 	ifs.read(result.data(), pos);
 
 	return result;
@@ -36,7 +35,7 @@ string split(string s, char del){
       nameSong += s[i];
   	else
 			break;
-   }
+  }
 	 return nameSong;
 }
 
@@ -79,14 +78,14 @@ int main(int argc, char** argv) {
 
     cout << "Action:  " << op << endl;
 
-    if (op == "list") {  // Use case 1: Send the songs
+    if(op == "list") {  // Use case 1: Send the songs
       message n;
       n << songs.size();
       for(const auto& p : songs)
         n << p.first;
       s.send(n);
-    } else if(op == "play") {
-      // Use case 2: Send song file
+
+    }else if(op == "play") {
       string songName;
       m >> songName;
       cout << "sending parts of " << songName
@@ -95,18 +94,19 @@ int main(int argc, char** argv) {
 			n << songs[songName] << "file";
 			fileToMesage(songName, n, 0);
 			s.send(n);
-    } else if (op == "part") {
+
+    }else if(op == "part") {
       string songName;
       int part;
-      m >> songName;
-      m >> part;
+      m >> songName >> part;
       cout << "sending song " << songName
            << " part " << songs[songName] << endl;
       message n;
       n << songs[songName] << "file";
       fileToMesage(songName, n, part);
       s.send(n);
-    } else {
+
+    }else {
       cout << "Invalid operation requested!!\n";
     }
   }

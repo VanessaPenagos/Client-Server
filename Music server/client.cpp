@@ -40,39 +40,34 @@ void startPlaylist(SafeQueue<string> &q, Music *music, bool &next, bool &stop) {
 	context ctx;
 	socket s(ctx, socket_type::req);
 	s.connect("tcp://localhost:5555");
-	message m;
-	message answer;
-	double x = 10.0000;
+	message m, answer;
 	string nextSong, result;
 	int parts, part = 1;
 
   while(true){
+
   	nextSong = q.dequeue();
-	  q.enqueue(nextSong);
+	  q.enqueue(nextSong);  //Add song again
 		m << "play" << nextSong;
-		s.send(m);		//Se envia al servidor la solicitud de reproducir junto al nombre de la cancion
-		s.receive(answer);	//Se recibe el numero de partes que tiene la cancion
+		s.send(m);
+		s.receive(answer);
 		answer >> parts;
+
+    //Play song :
 		playSong(music, answer);
-    while (music->getStatus() == SoundSource::Playing && !next && !stop ) {
-    	if ( (music->getDuration().asSeconds() - x ) >= music->getPlayingOffset().asSeconds()){
+    while(music->getStatus() == SoundSource::Playing && !next) {
+    	if((music->getDuration().asSeconds() - 10.0) >= music->getPlayingOffset().asSeconds() && part < parts){
     		m << "part" << nextSong << part;
     		s.send(m);
         part++;
     		s.receive(answer);
-    		answer >> result;
+    		answer >> result;  // no importa.
     		messageToFile(answer, true);
-
-    	}
-      if(stop) {
-        music->stop();
-        stop = false;
-        break;
       }
+      if(stop) music->stop();
     }
       next = false;
-   }
-
+  }
 }
 
 int main() {
@@ -103,16 +98,22 @@ int main() {
   }
 
   while (true) {
-    cout << "Operation ? " << endl;
+
+    cout << endl <<  "Operation:  " << endl << endl;
     string operation;
+    cout << "list: -> list playlist " << endl;
+    cout << "add: ->  add song to playlist " << endl;
+    cout << "play: -> play playlist " << endl;
+    cout << "next: -> play next song in playlist " << endl;
+    cout << "stop: -> Pause playlist without restart" << endl << endl;
     cin >> operation;
 
-
+    // List playlist
     if (operation == "list") {
       string songlist;
       if (playList.isEmpty()){
         cout << "Playlist empty" << endl;
-      } else {
+      }else {
         int playListSize = playList.size();
         for (int i = 0; i < playListSize; ++i) {
           songlist = playList.dequeue();
@@ -121,22 +122,24 @@ int main() {
         }
       }
     }
-
+    // Add song to playList
     if (operation == "add"){
     	string addSong;
     	cout << "Name song: " << endl;
     	cin >> addSong;
     	playList.enqueue(addSong);
-    	cout << "Ready" << endl;
+    	cout << "Ready!" << endl;
     }
-
-    if (operation == "next") next = true;
-
-    if (operation == "stop") stop = true;
-
-    if(operation == "play") thread (startPlaylist, ref(playList), &music, ref(next), ref(stop)).detach();
-
-    if (operation == "exit") return 0;
+    //
+     if (operation == "next"){  //Next song in playlist
+       next = true;
+     } else if(operation == "stop") { // Only pause the playlist, but no resume.
+       stop = true;
+     } else if(operation == "play") { //Play playlist
+       thread (startPlaylist, ref(playList), &music, ref(next), ref(stop)).detach();
+     } else if(operation == "exit") {
+       return 0;
+     }
   }
   return 0;
 }
