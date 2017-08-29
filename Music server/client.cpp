@@ -36,10 +36,7 @@ void playSong(Music *music, message &answer) {
   }
 }
 
-void startPlaylist(SafeQueue<string> &q, Music *music, bool &next, bool &stop) {
-	context ctx;
-	socket s(ctx, socket_type::req);
-	s.connect("tcp://localhost:5555");
+void startPlaylist(SafeQueue<string> &q, Music *music, bool &next, bool &stop, socket &s) {
 	message m, answer;
 	string nextSong, result;
 	int parts, part = 1;
@@ -68,6 +65,13 @@ void startPlaylist(SafeQueue<string> &q, Music *music, bool &next, bool &stop) {
     }
       next = false;
   }
+}
+
+bool existSong(vector<string> v, string nameSong){
+	for(const auto& p : v){
+		if (p == nameSong) return true;
+  }
+  return false;
 }
 
 int main() {
@@ -102,10 +106,12 @@ int main() {
     cout << endl <<  "Operation:  " << endl << endl;
     string operation;
     cout << "list: -> list playlist " << endl;
+    cout << "listall: -> list all songs " << endl;
     cout << "add: ->  add song to playlist " << endl;
     cout << "play: -> play playlist " << endl;
     cout << "next: -> play next song in playlist " << endl;
-    cout << "stop: -> Pause playlist without restart" << endl << endl;
+    cout << "stop: -> Pause playlist without restart" << endl; 
+    cout << "exit: -> Exit player"<< endl << endl;
     cin >> operation;
 
     // List playlist
@@ -122,13 +128,23 @@ int main() {
         }
       }
     }
+
+    // List all songs in the server
+    if (operation == "listall"){
+    	for(const auto& p : songs){
+    		cout << "-" << p << endl;
+    	}
+    }
+
     // Add song to playList
     if (operation == "add"){
     	string addSong;
     	cout << "Name song: " << endl;
     	cin >> addSong;
-    	playList.enqueue(addSong);
-    	cout << "Ready!" << endl;
+    	if (existSong(songs, addSong)){
+    		playList.enqueue(addSong);
+    		cout << "Ready!" << endl;
+    	} else cout << "Not Found!" << endl;
     }
     //
      if (operation == "next"){  //Next song in playlist
@@ -136,7 +152,7 @@ int main() {
      } else if(operation == "stop") { // Only pause the playlist, but no resume.
        stop = true;
      } else if(operation == "play") { //Play playlist
-       thread (startPlaylist, ref(playList), &music, ref(next), ref(stop)).detach();
+       thread (startPlaylist, ref(playList), &music, ref(next), ref(stop), ref(s)).detach();
      } else if(operation == "exit") {
        return 0;
      }
