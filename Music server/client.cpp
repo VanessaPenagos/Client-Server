@@ -51,7 +51,7 @@ void startPlaylist(SafeQueue<string> &q, Music *music, bool &next, bool &stop, s
 
     //Play song :
 		playSong(music, answer);
-    while(music->getStatus() == SoundSource::Playing && !next) {
+    while(music->getStatus() == SoundSource::Playing && !next && !stop) {
     	if((music->getDuration().asSeconds() - 10.0) >= music->getPlayingOffset().asSeconds() && part < parts){
     		m << "part" << nextSong << part;
     		s.send(m);
@@ -60,10 +60,14 @@ void startPlaylist(SafeQueue<string> &q, Music *music, bool &next, bool &stop, s
     		answer >> result;  // no importa.
     		messageToFile(answer, true);
       }
-      if(stop) music->stop();
     }
 	  q.enqueue(nextSong);  //Add song again
-      next = false;
+  	if(stop){
+			music->stop();
+			stop = false;
+    	break;
+    }
+    next = false;
   }
 }
 
