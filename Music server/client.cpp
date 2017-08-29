@@ -44,7 +44,6 @@ void startPlaylist(SafeQueue<string> &q, Music *music, bool &next, bool &stop, s
   while(true){
 
   	nextSong = q.dequeue();
-	  q.enqueue(nextSong);  //Add song again
 		m << "play" << nextSong;
 		s.send(m);
 		s.receive(answer);
@@ -63,6 +62,7 @@ void startPlaylist(SafeQueue<string> &q, Music *music, bool &next, bool &stop, s
       }
       if(stop) music->stop();
     }
+	  q.enqueue(nextSong);  //Add song again
       next = false;
   }
 }
