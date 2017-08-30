@@ -62,7 +62,7 @@ void readDir(string dir, unordered_map<string,int> &songs) {
 int main(int argc, char** argv) {
   context ctx;
   socket s(ctx, socket_type::rep);
-  s.bind("tcp://192.168.9.17:5555");
+  s.bind("tcp://*:5555");
 
   string path(argv[1]);
   unordered_map<string,int> songs;
