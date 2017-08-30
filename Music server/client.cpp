@@ -89,7 +89,7 @@ int main() {
   context ctx;
   socket s(ctx, socket_type::req);
   cout << "Connecting to tcp port 5555\n";
-  s.connect("tcp://192.168.9.17:5555");
+  s.connect("tcp://localhost:5555");
 
   Music music;
   SafeQueue<string> playList;
