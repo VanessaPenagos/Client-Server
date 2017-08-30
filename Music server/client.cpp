@@ -39,7 +39,8 @@ void playSong(Music *music, message &answer) {
 void startPlaylist(SafeQueue<string> &q, Music *music, bool &next, bool &stop, socket &s) {
 	message m, answer;
 	string nextSong, result;
-	int parts, part = 1;
+	int parts, part;
+  float songDuration;
 
   while(true){
 
@@ -48,17 +49,21 @@ void startPlaylist(SafeQueue<string> &q, Music *music, bool &next, bool &stop, s
 		s.send(m);
 		s.receive(answer);
 		answer >> parts;
+    songDuration = 0;
+    part = 1;
 
     //Play song :
 		playSong(music, answer);
+    songDuration = music->getDuration().asSeconds();
     while(music->getStatus() == SoundSource::Playing && !next && !stop) {
-    	if((music->getDuration().asSeconds() - 10.0) >= music->getPlayingOffset().asSeconds() && part < parts){
+      if((songDuration - 10.0) <= music->getPlayingOffset().asSeconds() && part < parts) {
     		m << "part" << nextSong << part;
     		s.send(m);
         part++;
     		s.receive(answer);
     		answer >> result;  // no importa.
     		messageToFile(answer, true);
+        songDuration = songDuration + music->getDuration().asSeconds();
       }
     }
 	  q.enqueue(nextSong);  //Add song again
@@ -114,7 +119,7 @@ int main() {
     cout << "add: ->  add song to playlist " << endl;
     cout << "play: -> play playlist " << endl;
     cout << "next: -> play next song in playlist " << endl;
-    cout << "stop: -> Pause playlist without restart" << endl; 
+    cout << "stop: -> Pause playlist without restart" << endl;
     cout << "exit: -> Exit player"<< endl << endl;
     cin >> operation;
 
