@@ -3,5 +3,6 @@
 * Vanessa Penagos Rios
 * Daniela Zuluaga Ocampo
 
-export export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/utp/zmq/lib
+
+>export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/utp/zmq/lib
 
