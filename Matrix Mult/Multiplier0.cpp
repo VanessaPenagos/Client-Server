@@ -7,6 +7,13 @@
 using namespace std;
 using Mat = vector<vector<int>>;
 
+void dot(const Mat &m1, const Mat &m2, int a, int b, int &res){
+  int j = m1[0].size();
+  for(int c = 0; c < j; c++) {
+    res += m1[a][c] * m2[c][b];
+  }
+}
+
 void mult0(const Mat &m1, const Mat &m2, Mat &res) {
   int i = m1.size();    // number of rows in m1
   int j = m1[0].size(); // number of cols in m1
@@ -14,13 +21,15 @@ void mult0(const Mat &m1, const Mat &m2, Mat &res) {
   int l = m2[0].size(); // number of cols in m2
 
   assert(j == k);
-
+  vector<thread> ts;
   for (int a = 0; a < i; a++) {
     for (int b = 0; b < l; b++) {
-      for (int c = 0; c < j; c++) {
-        res[a][b] += m1[a][c] * m2[c][b];
-      }
+        ts.push_back(thread t(dot, cref(m1), cref(m2), a, b, ref(res)));
     }
+  }
+
+  for(thread t : ts ){
+    t.join();
   }
 }
 
