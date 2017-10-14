@@ -48,16 +48,6 @@ void benchmark(int times, const string &fileName) {
   //ad0();
 
  printMat(vectorData, vectorCols, vectorRows);
-
-
-
-/*  Mat r;
-  r.resize(g.size());
-  for (int i = 0; i < g.size(); i++)
-    r[i].resize(g.size(), numeric_limits<int>::max());
-  ad0(g, g, r);
-  printMat(r);
-*/
 }
 
 int main(int argc, char **argv) {
