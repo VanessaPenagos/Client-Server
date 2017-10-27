@@ -20,7 +20,6 @@ void readGraph(string fileName, unordered_map<string,int> &Mat, int &sizeMat){
 
       iss >> s1 >> s2 >> sizeMat;
 
-
     } else if (line[0] == 'e'){
       char e;
       int source, target, weight;
