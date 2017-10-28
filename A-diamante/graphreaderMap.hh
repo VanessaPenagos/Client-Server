@@ -2,13 +2,11 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <vector>
-#include <unordered_map>
-#include <utility>
+#include <map>
 
 using namespace std;
 
-void readGraph(string fileName, unordered_map<string,int> &Mat, int &sizeMat){
+void readGraph(string fileName, map<pair<int,int>,int> &Mat, int &sizeMat){
   ifstream infile(fileName);
   string line;
 
@@ -23,9 +21,10 @@ void readGraph(string fileName, unordered_map<string,int> &Mat, int &sizeMat){
     } else if (line[0] == 'e'){
       char e;
       int source, target, weight;
+      pair<int,int> key;
 
       iss >> e >> source >> target >> weight;
-      string key = to_string(source-1)+","+to_string(target-1);
+      key = make_pair(source-1,target-1);
       Mat[key] = weight;
     }
   }

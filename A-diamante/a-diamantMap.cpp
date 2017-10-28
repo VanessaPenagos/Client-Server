@@ -4,45 +4,45 @@
 #include <cassert>
 #include <iostream>
 #include <string>
-#include <unordered_map>
+#include <map>
 
 using namespace std;
-using Mat = vector<vector<int>>;
 
-string split(string s, char del){
-  string data = "";
-  for (int i = 0; i < int(s.size()); i++) {
-    if (s[i] != del)
-      data += s[i];
-    else
-      break;
-  }
-   return data;
-}
+void ad0(map <pair<int,int>,int> &Mat, map <pair<int,int>,int> &MatResult, int sizeMat) {
 
-void ad0(unordered_map <string,int> &Mat, unordered_map <string,int> &MatResult, int sizeMat) {
+  pair<int,int> indexR;
+  pair<int,int> indexA;
+  pair<int,int> indexB;
 
-  for (int a = 0; a < Mat.size(); a++)
-    for (int b = 0; b < Mat.size(); b++){
-        string indexA = to_string(a)+","+to_string(c);
-        string indexB = to_string(c)+","+to_string(b);
-        string indexR = to_string(a)+","+to_string(b);
+  for (int a = 0; a < sizeMat; a++){
+    for (int b = 0; b < sizeMat; b++){
+      for (int c = 0; c < sizeMat; c++){
+        indexA = make_pair(a,c);
+        indexB = make_pair(c,b);
+        indexR = make_pair(a,b);
         MatResult[indexR] = min(MatResult[indexR], (Mat[indexA] + Mat[indexB]));
       }
+    }
+    cout << "Hola mundo " << endl;
+  }
 }
 
-void printMat(unordered_map <string,int> &Mat) {
-   for(const auto& p : Mat)
-        cout << p.first << endl;
+void printMat(map <pair<int,int>,int> &Mat) {
+    pair<int,int> key;
+    for(const auto& p : Mat){
+        key = make_pair(p.first.first, p.first.second);
+        int value = Mat[key];
+        cout << p.first.first <<","<< p.first.second << " : " << value << endl;
+    }
 }
 
 void benchmark(int times, const string &fileName) {
-  unordered_map <string,int> Mat[50];
-  unordered_map <string,int> MatResult;
+  map <pair<int,int>, int> Mat;
+  map <pair<int,int>, int> MatResult;
+  int sizeMat;
   readGraph(fileName, Mat, sizeMat);
+  printMat(Mat);
   ad0(Mat,MatResult,sizeMat);
-  printMat(MatResult);
-  
 }
 
 int main(int argc, char **argv) {
