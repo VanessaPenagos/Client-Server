@@ -18,7 +18,7 @@ void readGraph(string fileName, map<pair<int,int>,int> &Mat, int &sizeMat){
 
       iss >> s1 >> s2 >> sizeMat;
 
-    } else if (line[0] == 'e'){
+    } else if (line[0] == 'a'){
       char e;
       int source, target, weight;
       pair<int,int> key;
