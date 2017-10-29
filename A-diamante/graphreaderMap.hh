@@ -3,12 +3,14 @@
 #include <sstream>
 #include <string>
 #include <map>
+#include <vector>
 
 using namespace std;
 
-void readGraph(string fileName, map<pair<int,int>,int> &Mat, int &sizeMat){
+void readGraph(string fileName, vector<map<int, int>> &Mat, int &sizeMat){
   ifstream infile(fileName);
   string line;
+  int current_source = -1;
 
   while (getline(infile, line)) {
     istringstream iss(line);
@@ -18,14 +20,26 @@ void readGraph(string fileName, map<pair<int,int>,int> &Mat, int &sizeMat){
 
       iss >> s1 >> s2 >> sizeMat;
 
-    } else if (line[0] == 'a'){
+    } else if (line[0] == 'e'){
       char e;
       int source, target, weight;
-      pair<int,int> key;
 
       iss >> e >> source >> target >> weight;
-      key = make_pair(source-1,target-1);
-      Mat[key] = weight;
+      map<int, int> col;
+
+      if (source != current_source){
+        Mat.push_back(col);
+        current_source = source;
+      }
+      
+      if(target != source){
+        col[target-1] = weight; 
+        cout << "Holi";
+      }
+      else{
+        col[target-1] = 0; 
+        cout << "Chau";
+      }
     }
   }
 }

@@ -5,6 +5,7 @@
 #include <iostream>
 #include <string>
 #include <map>
+#include <vector>
 
 using namespace std;
 
@@ -14,6 +15,9 @@ void ad0(map <pair<int,int>,int> &Mat, map <pair<int,int>,int> &MatResult, int s
   pair<int,int> indexA;
   pair<int,int> indexB;
 
+  int current_i = 0, cols = 0;
+  int count_i = 0;
+  
   for (int a = 0; a < sizeMat; a++) {
     for (int b = 0; b < sizeMat; b++) {
       for (int c = 0; c < sizeMat; c++) {
@@ -29,23 +33,24 @@ void ad0(map <pair<int,int>,int> &Mat, map <pair<int,int>,int> &MatResult, int s
   }
 }
 
-void printMat(map <pair<int,int>,int> &Mat) {
-    pair<int,int> key;
-    for(const auto& p : Mat){
-        key = make_pair(p.first.first, p.first.second);
-        int value = Mat[key];
-        cout << p.first.first <<","<< p.first.second << " : " << value << endl;
+void printMat(vector<map<int, int>> &Mat) {
+
+  for (int i = 0; i < Mat.size(); ++i){
+    cout << i << endl; 
+    for (const auto& p : Mat[i]){
+      cout << "Esto dentro de :::: " << endl;
     }
+  }
 }
 
 void benchmark(int times, const string &fileName) {
-  map <pair<int,int>, int> Mat;
-  map <pair<int,int>, int> MatResult;
+  vector<map<int, int>> Mat;
+  vector<map<int, int>> MatResult;
   int sizeMat;
   readGraph(fileName, Mat, sizeMat);
-  ad0(Mat,MatResult,sizeMat);
+  //ad0(Mat,MatResult,sizeMat);
   cout << "Ready! " << endl;
-  //printMat(MatResult  );
+  printMat(Mat);
 }
 
 int main(int argc, char **argv) {
