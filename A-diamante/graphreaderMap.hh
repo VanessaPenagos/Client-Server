@@ -6,11 +6,12 @@
 #include <vector>
 
 using namespace std;
+using vec = vector<map<int, int>>;
 
-void readGraph(string fileName, vector<map<int, int>> &Mat, vector<map<int, int>> &MatResult, int &sizeMat){
+void readGraph(string fileName, vec &Mat, vec &MatResult){
   ifstream infile(fileName);
   string line;
-  int current_source = -1;
+  int sizeMat;
 
   while (getline(infile, line)) {
     istringstream iss(line);
