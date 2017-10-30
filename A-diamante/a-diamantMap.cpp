@@ -9,25 +9,27 @@
 
 using namespace std;
 
-void ad0(map <pair<int,int>,int> &Mat, map <pair<int,int>,int> &MatResult, int sizeMat) {
-
-  pair<int,int> indexR;
-  pair<int,int> indexA;
-  pair<int,int> indexB;
-
-  int current_i = 0, cols = 0;
-  int count_i = 0;
+void ad0(vector<map<int, int>> &Mat, vector<map<int, int>> &MatResult, int sizeMat) {
   
-  for (int a = 0; a < sizeMat; a++) {
-    for (int b = 0; b < sizeMat; b++) {
-      for (int c = 0; c < sizeMat; c++) {
-        indexA = make_pair(a,c);
-        indexB = make_pair(c,b);
-        indexR = make_pair(a,b);
-        if (MatResult.count(indexR) > 0 && Mat.count(indexA) > 0 && Mat.count(indexB) > 0)
-          MatResult[indexR] = min(MatResult[indexR], (Mat[indexA] + Mat[indexB]));
-        else if(Mat.count(indexA) > 0 && Mat.count(indexB) > 0)
-          MatResult[indexR] = Mat[indexA] + Mat[indexB];
+  for (int i = 0; i < Mat.size(); i++) {
+    for (int j = 0; j < Mat.size() ; j++) {
+      auto m1 = Mat[i].begin();
+      auto m2 = Mat[j].begin();
+      while(m1 != Mat[i].end() && m2 != Mat[j].end()) {
+        if(m1->first == m2->first) {
+          if (MatResult[i].find(j) != MatResult[i].end()) {
+            MatResult[i][j] = min(MatResult[i][j], m1->second + m2->second);
+          } else {
+            MatResult[i][j] = m1->second + m2->second;
+          }
+          ++m1;
+          ++m2; 
+        }
+
+        if(m1->first > m2->first)
+          ++m2;
+        else 
+          ++m1;        
       }
     }
   }
@@ -47,10 +49,15 @@ void benchmark(int times, const string &fileName) {
   vector<map<int, int>> Mat;
   vector<map<int, int>> MatResult;
   int sizeMat;
-  readGraph(fileName, Mat, sizeMat);
-  //ad0(Mat,MatResult,sizeMat);
-  cout << "Ready! " << endl;
-  printMat(Mat);
+  readGraph(fileName, Mat, MatResult, sizeMat);
+  ad0(Mat,MatResult,sizeMat);
+  // cout << "Ready! " << endl;
+
+   cout << "Mat" << endl;
+   printMat(Mat);
+
+   cout << "MatResult" << endl;
+   printMat(MatResult);
 }
 
 int main(int argc, char **argv) {

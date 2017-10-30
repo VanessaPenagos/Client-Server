@@ -7,7 +7,7 @@
 
 using namespace std;
 
-void readGraph(string fileName, vector<map<int, int>> &Mat, int &sizeMat){
+void readGraph(string fileName, vector<map<int, int>> &Mat, vector<map<int, int>> &MatResult, int &sizeMat){
   ifstream infile(fileName);
   string line;
   int current_source = -1;
@@ -23,6 +23,7 @@ void readGraph(string fileName, vector<map<int, int>> &Mat, int &sizeMat){
       for (int i = 0; i < sizeMat; ++i){
         map<int, int> destiny;
         Mat.push_back(destiny);
+        MatResult.push_back(destiny);   
       }
 
     } else if (line[0] == 'e'){
