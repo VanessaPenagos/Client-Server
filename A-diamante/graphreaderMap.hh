@@ -20,25 +20,21 @@ void readGraph(string fileName, vector<map<int, int>> &Mat, int &sizeMat){
 
       iss >> s1 >> s2 >> sizeMat;
 
+      for (int i = 0; i < sizeMat; ++i){
+        map<int, int> destiny;
+        Mat.push_back(destiny);
+      }
+
     } else if (line[0] == 'e'){
       char e;
       int source, target, weight;
 
       iss >> e >> source >> target >> weight;
-      map<int, int> col;
-
-      if (source != current_source){
-        Mat.push_back(col);
-        current_source = source;
-      }
-      
       if(target != source){
-        col[target-1] = weight; 
-        cout << "Holi";
+        Mat[source-1][target-1] = weight;       
       }
       else{
-        col[target-1] = 0; 
-        cout << "Chau";
+        Mat[source-1][target-1] = 0;
       }
     }
   }

@@ -35,12 +35,12 @@ void ad0(map <pair<int,int>,int> &Mat, map <pair<int,int>,int> &MatResult, int s
 
 void printMat(vector<map<int, int>> &Mat) {
 
-  for (int i = 0; i < Mat.size(); ++i){
-    cout << i << endl; 
-    for (const auto& p : Mat[i]){
-      cout << "Esto dentro de :::: " << endl;
+  for (int i = 0; i < Mat.size(); i++) {
+    for (auto j = Mat[i].begin(); j != Mat[i].end(); ++j){
+        cout << i <<","<< j->first <<" : "<<  j->second << "  " ;
+      }
+    cout<<endl;
     }
-  }
 }
 
 void benchmark(int times, const string &fileName) {
