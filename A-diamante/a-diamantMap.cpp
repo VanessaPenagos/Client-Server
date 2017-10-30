@@ -8,8 +8,9 @@
 #include <vector>
 
 using namespace std;
+using vec = vector<map<int, int>>;
 
-void ad0(vector<map<int, int>> &Mat, vector<map<int, int>> &MatResult, int sizeMat) {
+void ad0(vec &Mat, vec &MatResult, int sizeMat) {
   
   for (int i = 0; i < Mat.size(); i++) {
     for (int j = 0; j < Mat.size() ; j++) {
@@ -24,9 +25,7 @@ void ad0(vector<map<int, int>> &Mat, vector<map<int, int>> &MatResult, int sizeM
           }
           ++m1;
           ++m2; 
-        }
-
-        if(m1->first > m2->first)
+        }else if(m1->first > m2->first)
           ++m2;
         else 
           ++m1;        
@@ -35,7 +34,7 @@ void ad0(vector<map<int, int>> &Mat, vector<map<int, int>> &MatResult, int sizeM
   }
 }
 
-void printMat(vector<map<int, int>> &Mat) {
+void printMat(vec &Mat) {
 
   for (int i = 0; i < Mat.size(); i++) {
     for (auto j = Mat[i].begin(); j != Mat[i].end(); ++j){
@@ -46,8 +45,8 @@ void printMat(vector<map<int, int>> &Mat) {
 }
 
 void benchmark(int times, const string &fileName) {
-  vector<map<int, int>> Mat;
-  vector<map<int, int>> MatResult;
+  vec Mat;
+  vec MatResult;
   int sizeMat;
   readGraph(fileName, Mat, MatResult, sizeMat);
   ad0(Mat,MatResult,sizeMat);
