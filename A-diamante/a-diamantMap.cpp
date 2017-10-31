@@ -102,12 +102,6 @@ void benchmark(int times, const string &fileName) {
   Adiamond(Mat,Mat.size());
   long _time = timer.elapsed();
   //cout << _time/1000.0;
-  // cout << "Ready! " << endl;
-
-   //cout << "Mat" << endl;
-   //printMat(Mat);
-
-   //cout << "MatResult" << endl;
    printMat(Mat);
 }
 
