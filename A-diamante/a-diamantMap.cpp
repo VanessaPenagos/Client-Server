@@ -12,24 +12,26 @@ using namespace std;
 using vec = vector<map<int, int>>;
 
 void minData(vec &Mat1,vec &Mat2, vec &MatResult, int i){
-	for (int j = 0; j < Mat2.size() ; j++) {
-	auto m1 = Mat1[i].begin();
-	auto m2 = Mat2[j].begin();
-	while(m1 != Mat1[i].end() && m2 != Mat2[j].end()) {
-	  if(m1->first == m2->first) {
-	    if (MatResult[i].find(j) != MatResult[i].end()) {
-	      MatResult[i][j] = min(MatResult[i][j], m1->second + m2->second);
-	    } else {
-	      MatResult[i][j] = m1->second + m2->second;
-	    }
-	    ++m1;
-	    ++m2; 
-	  }else if(m1->first > m2->first)
-	    ++m2;
-	  else 
-	    ++m1;        
-		}
-	}
+  for (int j = 0; j < Mat2.size() ; j++) {
+  auto m1 = Mat1[i].begin();
+  auto m2 = Mat2[j].begin();
+  while(m1 != Mat1[i].end() && m2 != Mat2[j].end()) {  
+    if(m1->first == m2->first) {
+      if (i == j) {
+        MatResult[i][j] = 0;
+      } else if (MatResult[i].find(j) != MatResult[i].end()) {
+        MatResult[i][j] = min(MatResult[i][j], m1->second + m2->second);
+      } else {
+        MatResult[i][j] = m1->second + m2->second;
+      }
+      ++m1;
+      ++m2; 
+    }else if(m1->first > m2->first)
+      ++m2;
+    else 
+      ++m1;
+    }
+  }
 }
 
 void mult(vec &Mat1,vec &Mat2, vec &MatResult) {
@@ -98,11 +100,16 @@ void benchmark(int times, const string &fileName) {
   vec Mat;
   vec MatResult;
   readGraph(fileName, Mat, MatResult);
-  Timer timer("a-diamantMap.cpp");
-  Adiamond(Mat,Mat.size());
-  long _time = timer.elapsed();
-  //cout << _time/1000.0;
-   printMat(Mat);
+  long timeAverage = 0.0;
+
+  for (int i = 0; i < times; ++i)
+  {
+    Timer timer("a-diamantMap.cpp");
+    Adiamond(Mat,Mat.size());
+    long _time = timer.elapsed();
+    timeAverage = timeAverage + _time;
+  }
+  cout <<"Time Average: " <<(timeAverage/times) /1000.0 << endl;
 }
 
 int main(int argc, char **argv) {
