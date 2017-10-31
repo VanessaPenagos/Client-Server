@@ -20,16 +20,18 @@ void readGraph(string fileName, vec &Mat, vec &MatResult){
       string s1, s2;
 
       iss >> s1 >> s2 >> sizeMat;
+      Mat.resize(sizeMat);
+      MatResult.resize(sizeMat);
 
       for (int i = 0; i < sizeMat; ++i){
         map<int, int> destiny;
-        Mat.push_back(destiny);
-        MatResult.push_back(destiny);   
+        Mat[i] = destiny;
+        MatResult[i] = destiny;
       }
 
-    } else if (line[0] == 'e'){
+    } else if (line[0] == 'e' || line[0] == 'a'){
       char e;
-      int source, target, weight;
+      int source, target, weight=1;
 
       iss >> e >> source >> target >> weight;
       if(target != source){
