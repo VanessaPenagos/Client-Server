@@ -70,6 +70,7 @@ int main(int argc, char** argv) {
         clientSocket.receive(r);
         string answer;
         r >> answer >> succesorIP >> succesorPort >> succesorID;
+        cout << "Su succesor es : " << succesorID << endl;
         if(answer == "Si") {
           s << myIp << myPort << Id;
           clientSocket.send(s);
@@ -91,7 +92,7 @@ int main(int argc, char** argv) {
         m >> question >> incommingId;
 
         if (question == "Puedo entrar?"){
-          if( incommingId > Id && incommingId < succesorID){
+          if( (incommingId > Id && incommingId <= succesorID) || (incommingId <= Id && incommingId <= 50)){
             cout << "El id esta en el rango " << endl;
             n << "Si" << succesorIP << succesorPort << succesorID;
             serverSocket.send(n);
