@@ -14,29 +14,6 @@ int generateId() {  // Genera un id de forma aleatoria.
   return dist(gen);
 }
 
-void findSuccesor(int Id, string myIP, string myPort, string &succesorIP, string &succesorPort, int &succesorID, socket &clientSocket) {
-  bool join = false;
-  while(!join){
-    clientSocket.connect("tcp://"+succesorIP+":"+succesorPort);
-    cout << "Conectado con : " << "tcp://"+succesorIP+":"+succesorPort << endl;
-    message s, r;
-    string answer;
-    s << "Puedo entrar?" << Id;
-    clientSocket.send(s);
-    clientSocket.receive(r);
-    cout << "Hola" << '\n';
-    r >> answer >> succesorIP >> succesorPort >> succesorID;
-
-    if(answer == "Si"){
-      cout << "Dijo que si! " << endl;
-      s << myIP << myPort << Id;
-      clientSocket.send(s);
-      clientSocket.receive(r);
-      join = true;
-    }
-  }
-}
-
 int main(int argc, char** argv) {
   if(argc != 5) {
     cerr << "Faltan argumentos " << endl;
@@ -63,49 +40,84 @@ int main(int argc, char** argv) {
   string answer;
   s << "Puedo entrar?" << Id;
   clientSocket.send(s);
+  cout << "El cliente envio 1." << endl;
 
   while(true){
     if (poll.poll()) {
+      cout << "En el poll " << endl;
       if (poll.has_input(clientSocket)) {
+        cout << "Client working..." << endl;
         clientSocket.receive(r);
+        cout << "El cliente recibe 1." << endl;
+
         string answer;
         r >> answer >> succesorIP >> succesorPort >> succesorID;
-        cout << "Su succesor es : " << succesorID << endl;
         if(answer == "Si") {
           s << myIp << myPort << Id;
           clientSocket.send(s);
+          cout << "El cliente envio 2." << endl;
           clientSocket.receive(r);
-        } else {
+          r >> answer;
+          cout << "answer " << answer << endl;
+          cout << "El cliente recibe 2." << endl;
+        }
+
+        if(answer == "No") {
           s << "Puedo entrar?" << Id;
           clientSocket.send(s);
+          cout << "El cliente envio 3." << endl;
         }
-        //findSuccesor(Id, myIp, myPort, succesorIP, succesorPort, succesorID, clientSocket);
-        //Client :3
-        //cout << "El sucesor tiene el ID : " << succesorID << endl;
       }
 
       if (poll.has_input(serverSocket)) {
+        cout << "Server socket working..." << endl;
         message m, n;
         string question;
         int incommingId;
         serverSocket.receive(m);
+        cout << "El server recibe 1." << endl;
         m >> question >> incommingId;
-
+        cout << " Pregunta : " << question << " de : " << incommingId << endl;
         if (question == "Puedo entrar?"){
-          if( (incommingId > Id && incommingId <= succesorID) || (incommingId <= Id && incommingId <= 50)){
-            cout << "El id esta en el rango " << endl;
-            n << "Si" << succesorIP << succesorPort << succesorID;
+          if(succesorID == 100){
+            n << "Si" << myIp << myPort << Id;
             serverSocket.send(n);
+            cout << "Servidor envia : " << " IP : " << myIp << " Port : "  << myPort << " ID : " << Id << endl;
             serverSocket.receive(m);
+            cout << "El server recibe 2." << endl;
             m >> succesorIP >> succesorPort >> succesorID;
-            cout << "Pudo entrar, su succesor es : " << succesorID << endl;
+            cout << "Servidor recibe : " << " succesorIP : " << succesorIP << " succesorPort : "  << succesorPort << " succesorID : " << succesorID << endl;
             n << "" ;
             serverSocket.send(n);
           } else {
-            cout << "El id no esta en el rango" << endl;
-            cout << "Su succesor es : " << succesorID << endl;
-            n << "No" << succesorIP << succesorPort << succesorID;
+            if((incommingId > Id && incommingId <= succesorID)){
+              n << "Si" << succesorIP << succesorPort << succesorID;
+              cout << "Servidor envia : " << " IP : " << myIp << " Port : "  << myPort << " ID : " << Id << endl;
+              serverSocket.send(n);
+              cout << "Servidor recibe : " << " succesorIP : " << succesorIP << " succesorPort : "  << succesorPort << " succesorID : " << succesorID << endl;
+              serverSocket.receive(m);
+              cout << "El server recibe 3." << endl;
+
+              m >> succesorIP >> succesorPort >> succesorID;
+              n << "" ;
+              serverSocket.send(n);
+            } else {
+              if(incommingId > succesorID || incommingId <= Id){
+                cout << "No se conecto en los anteriores casos." << endl;
+              }
           }
+        }
+          //     if(incommingId >= succesorID) {
+          //       n << "Si" << succesorIP << succesorPort << succesorID;
+          //       serverSocket.send(n);
+          //       serverSocket.receive(m);
+          //       m >> succesorIP >> succesorPort >> succesorID;
+          //       n << "" ;
+          //       serverSocket.send(n);
+          //     } else {
+          //       n << "No" << succesorIP << succesorPort << succesorID;
+          //       serverSocket.send(n);
+          //     }
         }
       }
     }
