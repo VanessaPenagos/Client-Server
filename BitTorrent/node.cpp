@@ -2,6 +2,7 @@
 #include <random>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <zmqpp/zmqpp.hpp>
 
 using namespace std;
@@ -14,114 +15,118 @@ int generateId() {  // Genera un id de forma aleatoria.
   return dist(gen);
 }
 
-int main(int argc, char** argv) {
-  if(argc != 5) {
-    cerr << "Faltan argumentos " << endl;
-    return -1;
-  }
+void Server( socket &serverSocket, int my_id, string my_ip, string my_port, int &succesor_id, string &succesor_ip, string &succesor_port) {
+  serverSocket.bind("tcp://*:" + my_port);
+  cout << "Iniciando servidor" << '\n';
 
-  string myIp = argv[1], myPort = argv[2], succesorIP = argv[3], succesorPort = argv[4];
-  int Id = generateId();
-  int succesorID = 100;
+  while (true) {
+    message s,r;
+    int input_id;
+    string question;
+    serverSocket.receive(r);
+    r >> question >> input_id;
 
-  cout << "Mi id es : " << Id << endl;
-  cout << "Al iniciar el succesor es : " << succesorID << endl;
-
-  context ctx;
-  poller poll;
-
-  socket clientSocket(ctx, socket_type::req);  //Pregunta a los otros nodos
-  socket serverSocket(ctx, socket_type::rep);  //Escucha a los otros nodos
-  clientSocket.connect("tcp://"+succesorIP+":"+succesorPort);
-  serverSocket.bind("tcp://*:"+myPort);
-  poll.add(clientSocket);
-  poll.add(serverSocket);
-  message s, r;
-  string answer;
-  s << "Puedo entrar?" << Id;
-  clientSocket.send(s);
-  cout << "El cliente envio 1." << endl;
-
-  while(true){
-    if (poll.poll()) {
-      cout << "En el poll " << endl;
-      if (poll.has_input(clientSocket)) {
-        cout << "Client working..." << endl;
-        clientSocket.receive(r);
-        cout << "El cliente recibe 1." << endl;
-
-        string answer;
-        r >> answer >> succesorIP >> succesorPort >> succesorID;
-        if(answer == "Si") {
-          s << myIp << myPort << Id;
-          clientSocket.send(s);
-          cout << "El cliente envio 2." << endl;
-          clientSocket.receive(r);
-          r >> answer;
-          cout << "answer " << answer << endl;
-          cout << "El cliente recibe 2." << endl;
-        }
-
-        if(answer == "No") {
-          s << "Puedo entrar?" << Id;
-          clientSocket.send(s);
-          cout << "El cliente envio 3." << endl;
-        }
-      }
-
-      if (poll.has_input(serverSocket)) {
-        cout << "Server socket working..." << endl;
-        message m, n;
-        string question;
-        int incommingId;
-        serverSocket.receive(m);
-        cout << "El server recibe 1." << endl;
-        m >> question >> incommingId;
-        cout << " Pregunta : " << question << " de : " << incommingId << endl;
-        if (question == "Puedo entrar?"){
-          if(succesorID == 100){
-            n << "Si" << myIp << myPort << Id;
-            serverSocket.send(n);
-            cout << "Servidor envia : " << " IP : " << myIp << " Port : "  << myPort << " ID : " << Id << endl;
-            serverSocket.receive(m);
-            cout << "El server recibe 2." << endl;
-            m >> succesorIP >> succesorPort >> succesorID;
-            cout << "Servidor recibe : " << " succesorIP : " << succesorIP << " succesorPort : "  << succesorPort << " succesorID : " << succesorID << endl;
-            n << "" ;
-            serverSocket.send(n);
-          } else {
-            if((incommingId > Id && incommingId <= succesorID)){
-              n << "Si" << succesorIP << succesorPort << succesorID;
-              cout << "Servidor envia : " << " IP : " << myIp << " Port : "  << myPort << " ID : " << Id << endl;
-              serverSocket.send(n);
-              cout << "Servidor recibe : " << " succesorIP : " << succesorIP << " succesorPort : "  << succesorPort << " succesorID : " << succesorID << endl;
-              serverSocket.receive(m);
-              cout << "El server recibe 3." << endl;
-
-              m >> succesorIP >> succesorPort >> succesorID;
-              n << "" ;
-              serverSocket.send(n);
-            } else {
-              if(incommingId > succesorID || incommingId <= Id){
-                cout << "No se conecto en los anteriores casos." << endl;
-              }
+    if (question == "Puedo ser tu sucesor?") {
+      if (input_id > my_id && input_id <= succesor_id) { // Borrar para cuando se use el sha1
+        s << "Si";
+        serverSocket.send(s);
+        serverSocket.receive(r);
+        s << succesor_id << succesor_ip << succesor_port;
+        serverSocket.send(s);
+        r >> succesor_id >> succesor_ip >> succesor_port;
+        cout << "Servidor:: actualiza sucesor " << succesor_id << endl;
+      } else {
+        if ( input_id > my_id && input_id > succesor_id) {
+          s << "Si";
+          serverSocket.send(s);
+          serverSocket.receive(r);
+          s << succesor_id << succesor_ip << succesor_port;
+          serverSocket.send(s);
+          r >> succesor_id >> succesor_ip >> succesor_port;
+          cout << "Servidor:: actualiza sucesor " << succesor_id << endl;
+        } else {
+          s << "No";
+          string request;
+          serverSocket.send(s);
+          serverSocket.receive(r);
+          cout << "AQUI ES" << endl;
+          r >> request;
+          if (request == "Cual es tu sucesor?") {
+            r >> succesor_ip >> succesor_port;
+            serverSocket.send(r);
           }
-        }
-          //     if(incommingId >= succesorID) {
-          //       n << "Si" << succesorIP << succesorPort << succesorID;
-          //       serverSocket.send(n);
-          //       serverSocket.receive(m);
-          //       m >> succesorIP >> succesorPort >> succesorID;
-          //       n << "" ;
-          //       serverSocket.send(n);
-          //     } else {
-          //       n << "No" << succesorIP << succesorPort << succesorID;
-          //       serverSocket.send(n);
-          //     }
         }
       }
     }
   }
+}
 
+int main(int argc, char** argv) {
+
+  string my_ip, my_port, succesor_ip, succesor_port;
+  int succesor_id, my_id;
+
+  if (argc == 3){
+    my_id = 0;
+    my_ip = argv[1];
+    my_port = argv[2];
+    succesor_id = 0;
+    succesor_ip = my_ip;
+    succesor_port = my_port;
+    cout << "Me he conectado" << endl;
+  }
+
+  if (argc == 5) {
+    my_id = generateId();
+    my_ip = argv[1];
+    my_port = argv[2];
+    succesor_id = -1;
+    succesor_ip = argv[3];
+    succesor_port = argv[4];
+  }
+
+  context ctx;
+  socket serverSocket(ctx,socket_type::rep);
+  socket clientSocket(ctx,socket_type::req);
+  thread thread_server;
+  thread_server = thread(Server, ref(serverSocket), my_id, my_ip, my_port, ref(succesor_id), ref(succesor_ip), ref(succesor_port));
+  bool flag = false;
+
+  while (true) {
+    if (argc == 5) {
+      context ctx;
+      message s,r;
+      string answer;
+      while (!flag) {
+        clientSocket.connect("tcp://" + succesor_ip + ":" + succesor_port);
+        cout << "Mi ID " << my_id <<endl;
+
+        s << "Puedo ser tu sucesor?" << my_id;
+        clientSocket.send(s);
+        clientSocket.receive(r);
+        r >> answer;
+
+        if (answer == "Si"){
+          s << my_id << my_ip << my_port;
+          clientSocket.send(s);
+          clientSocket.receive(r);
+          clientSocket.disconnect("tcp://" + succesor_ip + ":" + succesor_port);
+          r >> succesor_id >> succesor_ip >> succesor_port;
+          cout << "Mi nuevo sucesor " << succesor_id << endl;
+          flag = true;
+          cout << "Pude entrar al anillo" << endl;
+        } else {
+          if (answer == "No") {
+            s << "Cual es tu sucesor?";
+            clientSocket.send(s);
+            clientSocket.receive(r);
+            clientSocket.disconnect("tcp://" + succesor_ip + ":" + succesor_port);
+            r >> succesor_ip >> succesor_port;
+            cout << "Continuo el en siguiente nodo " << succesor_port << endl;
+          }
+        }
+      }
+    }
+  }
   return 0;
 }
