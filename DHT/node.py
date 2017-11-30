@@ -2,58 +2,76 @@ import hashlib
 import sys
 import zmq
 
+def server():
+    socket_server.bind('tcp://*:' + node_data['port'])
+    print("server started")
 
-class Node:
-    def __init__(self, my_ip, my_port, succesor_ip=None, succesor_port=None):
-        ''' Crea el nodo'''
-        my_address = str(my_ip + my_port)
-        my_address = my_address.encode('utf_8')
-        self.my_id = hashlib.sha256(my_address).hexdigest()
-        self.my_ip = my_ip
-        self.my_port = my_port
-        self.predeccesor_ip = None
-        self.predeccesor_port = None
-        self.succesor_ip = succesor_ip
-        self.succesor_port = succesor_port
-        self.finger_table = {}
+    while True:
+        request = socket_server.recv_json()
 
-    def get_predeccesor(self):
-        ''' Muestra el predecesor del nodo'''
-        return self.predeccesor
+        if request['request'] == "joint the ring":
+            if (request['id'] > node_data['id']) and (request['id'] <= succesor_data['id']):
+                socket_server.send("yes")
+                new_succesor = socket_server.recv_json()
+                socket_server.send_json(succesor_data)
 
-    def get_succesor(self):
-        ''' Muestra los sucesores del nodo'''
-        return self.finger_table
+                succesor_data['ip'] = new_succesor['ip']
+                succesor_data['port'] = new_succesor['port']
+                succesor_data['id'] = new_succesor['id']
+                print("Successor updated")
+            elif:
+                pass
 
-    def set_predeccesor(self, predeccesor):
-        ''' Cambia el predecesor'''
-        self.predeccesor = predeccesor
+def main():                                                                 
+    if len(sys.argv) == 3:
+        node_data = {'ip' : sys.argv[1], 'port' : sys.argv[2], 'id' : hashlib.sha256(my_address).hexdigest()]
+        succesor_data = {}
+        predeccesor_data = {}
 
-    def set_succesor(self, succesor):
-        ''' Entrega el sucesor'''
-        self.succesor = succesor
-
-
-def main():
+    if len(sys.argv) == 5:
+        node_data = {'ip' : sys.argv[1], 'port' : sys.argv[2], 'id' : hashlib.sha256(my_address).hexdigest()]
+        succesor_data = {}
+        predeccesor_data = {'ip' : sys.argv[3], 'port' : sys.argv[4]}
 
     context = zmq.Context()
     socket_client = context.socket(zmq.REQ)
     socket_server = context.socket(zmq.REP)
+    # Hilo para el servidor
+
     bool flag = False
 
-    if len(sys.argv) == 3:
-        node = Node(sys.argv[1], sys.argv[2])
+    while True:
+        if len(sys.argv) == 5:
+            while not flag:
+                socket_client.connect("tcp://" + predeccesor_data['ip'] + ":" + predeccesor_data['ip'])
+                message = {'request' : "join the ring", 'id' : node_data['id']
+                socket_client.send_json(message)
+                answer = socket_client.recv()
 
-    if len(sys.argv) == 5:
-        node = Node(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
+                if answer == 'yes':
+                    socket_client.send_json(node_data)
+                    new_succesor = socket_client.recv_json()
+                    succesor_data['ip'] = new_succesor['ip']
+                    succesor_data['port'] = new_succesor['port']
+                    succesor_data['id'] = new_succesor['id']
 
-    while not flag:
-        socket_client.connect("tcp://" + node.succesor_ip + ":" + node.succesor_port)
-        message = {'message': "Puedo ser tu sucesor?", 'id': node.my_id}
-        socket_client.send_json(message)
-        answer = socket_client.recv()
+                    socket_client.disconnect("tcp://" + predeccesor_data['ip'] + ":" + predeccesor_data['ip'])
+                    socket_client.connect("tcp://" + succesor_data['ip'] + ":" + succesor_data['ip'])
+                    socket_client.send_json(node_data)
 
-        if answer == 'Si':
-            message = {'id': node.my_id, 'ip': node.my_ip, 'port': node.my_port}
-            socket_client.send_json(message)
-            
+                    flag = True
+                    print("I joined in this node")
+
+                if answer == 'no':
+                    socket_client.send("give me your successor")
+                    new_predeccesor = socket_client.recv_json()
+
+                    socket_client.disconnect("tcp://" + predeccesor_data['ip'] + ":" + predeccesor_data['ip'])
+
+                    predeccesor_data['ip'] = new_predeccesor['ip']
+                    predeccesor_data['port'] = new_predeccesor['port']
+                    predeccesor_data['id'] = new_predeccesor['id']
+
+                    print("trying with the next node")
+
+main()
