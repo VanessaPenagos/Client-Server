@@ -6,13 +6,12 @@ import zmq
 
 def server(socket_server, node_data, succesor_data, predeccesor_data):
     socket_server.bind('tcp://*:' + node_data['port'])
-    print("server started")
 
     while True:
         request = socket_server.recv_json()
-        print("request receive")
+        print(request)
         if request['request'] == "join the ring":
-            if (request['id'] > node_data['id']) and (request['id'] <=
+            if (request['id'] >= node_data['id']) and (request['id'] <=
                                                       succesor_data['id']):
                 print("Esta en el rango")
                 socket_server.send_string("yes")
@@ -34,6 +33,17 @@ def server(socket_server, node_data, succesor_data, predeccesor_data):
                 succesor_data['id'] = new_succesor['id']
                 print("Successor updated")
 
+            elif (request['id'] < node_data['id']) and (request['id'] < succesor_data['id']) and (node_data['id'] >= succesor_data['id']):
+                    print("Pero yo soy mayor que mi succesor_data[id]")
+                    socket_server.send_string("yes")
+                    new_succesor = socket_server.recv_json()
+                    socket_server.send_json(succesor_data)
+
+                    succesor_data['ip'] = new_succesor['ip']
+                    succesor_data['port'] = new_succesor['port']
+                    succesor_data['id'] = new_succesor['id']
+                    print("Successor updated")
+
             else:
                 print("Es el else //No")
                 socket_server.send_string("no")
@@ -54,21 +64,13 @@ def server(socket_server, node_data, succesor_data, predeccesor_data):
 def main():
     if len(sys.argv) == 3:
         my_address = (sys.argv[1] + sys.argv[2]).encode('utf-8')
-        node_data = {
-            'ip': sys.argv[1],
-            'port': sys.argv[2],
-            'id': hashlib.sha256(my_address).hexdigest()
-        }
-        succesor_data = {'ip': '-1', 'port': '-1', 'id': '-1'}
-        predeccesor_data = {'ip': '-1', 'port': '-1', 'id': '-1'}
+        node_data = { 'ip': sys.argv[1], 'port': sys.argv[2], 'id': hashlib.sha256(my_address).hexdigest()}
+        succesor_data = {'ip': sys.argv[1], 'port': sys.argv[2], 'id': node_data['id']}
+        predeccesor_data = {'ip': sys.argv[1], 'port': sys.argv[2], 'id': node_data['id']}
 
     if len(sys.argv) == 5:
         my_address = (sys.argv[1] + sys.argv[2]).encode('utf-8')
-        node_data = {
-            'ip': sys.argv[1],
-            'port': sys.argv[2],
-            'id': hashlib.sha256(my_address).hexdigest()
-        }
+        node_data = {'ip': sys.argv[1], 'port': sys.argv[2], 'id': hashlib.sha256(my_address).hexdigest()}
         succesor_data = {}
         predeccesor_data = {'ip': sys.argv[3], 'port': sys.argv[4]}
 
@@ -100,17 +102,19 @@ def main():
                 if answer == 'yes':
                     socket_client.send_json(node_data)
                     new_succesor = socket_client.recv_json()
+                    print("El nuevo succesor de este nodo es : ")
+                    print(new_succesor)
                     succesor_data['ip'] = new_succesor['ip']
                     succesor_data['port'] = new_succesor['port']
                     succesor_data['id'] = new_succesor['id']
-                    socket_client.disconnect("tcp://" + predeccesor_data['ip']
-                                             + ":" + predeccesor_data['port'])
+                    socket_client.disconnect("tcp://" + predeccesor_data['ip'] + ":" + predeccesor_data['port'])
 
-                    socket_client.connect("tcp://" + succesor_data['ip'] +
-                                          ":" + succesor_data['ip'])
+                    socket_client.connect("tcp://" + succesor_data['ip'] + ":" + succesor_data['port'])
                     message = {'request': "Update your predecessor"}
                     socket_client.send_json(message)
-                    answer = socket_client.recv()
+                    answer = socket_client.recv_string()
+                    print("Predecesor actualizado")
+
                     if answer == "Ok, send me your data":
                         socket_client.send_json(node_data)
                         ok = socket_client.recv_string()
