@@ -8,8 +8,9 @@ def server(socket_server, node_data, succesor_data, predeccesor_data):
     print("server started")
 
     while True:
+        print(node_data['port'])
         request = socket_server.recv_json()
-
+        print("request receive")
         if request['request'] == "joint the ring":
             if (request['id'] > node_data['id']) and (request['id'] <= succesor_data['id']):
                 socket_server.send("yes")
@@ -48,12 +49,14 @@ def server(socket_server, node_data, succesor_data, predeccesor_data):
 
 def main():
     if len(sys.argv) == 3:
-        node_data = {'ip' : sys.argv[1], 'port' : sys.argv[2], 'id' : hashlib.sha256(my_address).hexdigest()]
+        my_address = (sys.argv[1] + sys.argv[2]).encode('utf-8')
+        node_data = {'ip' : sys.argv[1], 'port' : sys.argv[2], 'id' : hashlib.sha256(my_address).hexdigest()}
         succesor_data = {}
         predeccesor_data = {}
 
     if len(sys.argv) == 5:
-        node_data = {'ip' : sys.argv[1], 'port' : sys.argv[2], 'id' : hashlib.sha256(my_address).hexdigest()]
+        my_address = (sys.argv[1] + sys.argv[2]).encode('utf-8')
+        node_data = {'ip' : sys.argv[1], 'port' : sys.argv[2], 'id' : hashlib.sha256(my_address).hexdigest()}
         succesor_data = {}
         predeccesor_data = {'ip' : sys.argv[3], 'port' : sys.argv[4]}
 
@@ -61,16 +64,16 @@ def main():
     socket_client = context.socket(zmq.REQ)
     socket_server = context.socket(zmq.REP)
 
-    thread_server = threading.Thread(target=server, args=socket_server, node_data, succesor_data, predeccesor_data )
-    thread_server.start()
+    # thread_server = threading.Thread(target=server, args=(socket_server, node_data, succesor_data, predeccesor_data,))
+    # thread_server.start()
 
-    bool flag = False
+    flag = False
 
     while True:
         if len(sys.argv) == 5:
             while not flag:
                 socket_client.connect("tcp://" + predeccesor_data['ip'] + ":" + predeccesor_data['port'])
-                message = {'request' : "join the ring", 'id' : node_data['id']
+                message = {'request' : "join the ring", 'id' : node_data['id']}
                 socket_client.send_json(message)
                 answer = socket_client.recv()
 
