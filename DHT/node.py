@@ -1,8 +1,12 @@
 import hashlib
+import random
 import sys
 import threading
 import zmq
 
+def generate_id():
+    id = random.randrange(15)
+    return id
 
 def server(socket_server, node_data, succesor_data, predeccesor_data):
     socket_server.bind('tcp://*:' + node_data['port'])
@@ -11,9 +15,7 @@ def server(socket_server, node_data, succesor_data, predeccesor_data):
         request = socket_server.recv_json()
         print(request)
         if request['request'] == "join the ring":
-            if (request['id'] >= node_data['id']) and (request['id'] <=
-                                                      succesor_data['id']):
-                print("Esta en el rango")
+            if (request['id'] >= node_data['id']) and (request['id'] <= succesor_data['id']):
                 socket_server.send_string("yes")
                 new_succesor = socket_server.recv_json()
                 socket_server.send_json(succesor_data)
@@ -22,8 +24,7 @@ def server(socket_server, node_data, succesor_data, predeccesor_data):
                 succesor_data['port'] = new_succesor['port']
                 succesor_data['id'] = new_succesor['id']
                 print("Successor updated")
-            elif (request['id'] > node_data['id']) and (request['id'] >
-                                                        succesor_data['id']):
+            elif (request['id'] > node_data['id']) and (request['id'] > succesor_data['id']):
                 socket_server.send_string("yes")
                 new_succesor = socket_server.recv_json()
                 socket_server.send_json(succesor_data)
@@ -34,7 +35,6 @@ def server(socket_server, node_data, succesor_data, predeccesor_data):
                 print("Successor updated")
 
             elif (request['id'] < node_data['id']) and (request['id'] < succesor_data['id']) and (node_data['id'] >= succesor_data['id']):
-                    print("Pero yo soy mayor que mi succesor_data[id]")
                     socket_server.send_string("yes")
                     new_succesor = socket_server.recv_json()
                     socket_server.send_json(succesor_data)
@@ -64,15 +64,17 @@ def server(socket_server, node_data, succesor_data, predeccesor_data):
 def main():
     if len(sys.argv) == 3:
         my_address = (sys.argv[1] + sys.argv[2]).encode('utf-8')
-        node_data = { 'ip': sys.argv[1], 'port': sys.argv[2], 'id': hashlib.sha256(my_address).hexdigest()}
+        node_data = { 'ip': sys.argv[1], 'port': sys.argv[2], 'id': generate_id()}
         succesor_data = {'ip': sys.argv[1], 'port': sys.argv[2], 'id': node_data['id']}
         predeccesor_data = {'ip': sys.argv[1], 'port': sys.argv[2], 'id': node_data['id']}
+        print("Mi ID es : " + str(node_data['id']))
 
     if len(sys.argv) == 5:
         my_address = (sys.argv[1] + sys.argv[2]).encode('utf-8')
-        node_data = {'ip': sys.argv[1], 'port': sys.argv[2], 'id': hashlib.sha256(my_address).hexdigest()}
+        node_data = {'ip': sys.argv[1], 'port': sys.argv[2], 'id': generate_id()}
         succesor_data = {}
         predeccesor_data = {'ip': sys.argv[3], 'port': sys.argv[4]}
+        print("Mi ID es : " + str(node_data['id']))
 
     context = zmq.Context()
     socket_client = context.socket(zmq.REQ)
@@ -93,8 +95,7 @@ def main():
     while True:
         if len(sys.argv) == 5:
             while not flag:
-                socket_client.connect("tcp://" + predeccesor_data['ip'] + ":" +
-                                      predeccesor_data['port'])
+                socket_client.connect("tcp://" + predeccesor_data['ip'] + ":" + predeccesor_data['port'])
                 message = {'request': "join the ring", 'id': node_data['id']}
                 socket_client.send_json(message)
                 answer = socket_client.recv_string()
