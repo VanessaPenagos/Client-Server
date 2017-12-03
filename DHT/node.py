@@ -6,11 +6,12 @@ import zmq
 import os
 
 stop = False
+
 def generate_id():
     id = random.randrange(15)
     return id
 
-def server(socket_server, node_data, succesor_data, predeccesor_data):
+def server(socket_server, node_data, succesor_data, predecessor_data):
     socket_server.bind('tcp://*:' + node_data['port'])
 
     while not stop:
@@ -61,11 +62,11 @@ def server(socket_server, node_data, succesor_data, predeccesor_data):
 
         if request['request'] == "Update your predecessor":
             socket_server.send_string("Ok, send me your data")
-            new_predeccesor = socket_server.recv_json()
+            new_predecessor = socket_server.recv_json()
             socket_server.send_string("ok")
-            predeccesor_data['ip'] = new_predeccesor['ip']
-            predeccesor_data['port'] = new_predeccesor['port']
-            predeccesor_data['id'] = new_predeccesor['id']
+            predecessor_data['ip'] = new_predecessor['ip']
+            predecessor_data['port'] = new_predecessor['port']
+            predecessor_data['id'] = new_predecessor['id']
 
         if request['request'] == "Update your successor":
             socket_server.send_string("Ok, send me your data")
@@ -81,27 +82,26 @@ def main():
         my_address = (sys.argv[1] + sys.argv[2]).encode('utf-8')
         node_data = { 'ip': sys.argv[1], 'port': sys.argv[2], 'id': generate_id()}
         succesor_data = {'ip': sys.argv[1], 'port': sys.argv[2], 'id': node_data['id']}
-        predeccesor_data = {'ip': sys.argv[1], 'port': sys.argv[2], 'id': node_data['id']}
-        flag = True
+        predecessor_data = {'ip': sys.argv[1], 'port': sys.argv[2], 'id': node_data['id']}
+        joined = True
 
     if len(sys.argv) == 5:
         my_address = (sys.argv[1] + sys.argv[2]).encode('utf-8')
         node_data = {'ip': sys.argv[1], 'port': sys.argv[2], 'id': generate_id()}
         succesor_data = {}
-        predeccesor_data = {'ip': sys.argv[3], 'port': sys.argv[4]}
-        flag = False
+        predecessor_data = {'ip': sys.argv[3], 'port': sys.argv[4]}
+        joined = False
 
     context = zmq.Context()
     socket_client = context.socket(zmq.REQ)
     socket_server = context.socket(zmq.REP)
-    run = True
-    thread_server = threading.Thread(target=server, args=(socket_server, node_data,succesor_data,predeccesor_data,))
+    thread_server = threading.Thread(target=server, args=(socket_server, node_data,succesor_data,predecessor_data,))
     thread_server.start()
 
-
+    # Cliente
     while True:
-        while not flag:
-            socket_client.connect("tcp://" + predeccesor_data['ip'] + ":" + predeccesor_data['port'])
+        while not joined:
+            socket_client.connect("tcp://" + predecessor_data['ip'] + ":" + predecessor_data['port'])
             message = {'request': "join the ring", 'id': node_data['id']}
             socket_client.send_json(message)
             answer = socket_client.recv_string()
@@ -114,9 +114,9 @@ def main():
                 succesor_data['id'] = new_succesor['id']
 
                 socket_client.send_string("give me your id")
-                predeccesor_data['id'] = int(socket_client.recv_string())
+                predecessor_data['id'] = int(socket_client.recv_string())
 
-                socket_client.disconnect("tcp://" + predeccesor_data['ip'] + ":" + predeccesor_data['port'])
+                socket_client.disconnect("tcp://" + predecessor_data['ip'] + ":" + predecessor_data['port'])
                 socket_client.connect("tcp://" + succesor_data['ip'] + ":" + succesor_data['port'])
                 message = {'request': "Update your predecessor"}
                 socket_client.send_json(message)
@@ -127,39 +127,39 @@ def main():
                     ok = socket_client.recv_string()
                     socket_client.disconnect("tcp://" + succesor_data['ip'] + ":" + succesor_data['port'])
 
-                flag = True
+                joined = True
                 print("I joined in this node")
 
             if answer == 'no':
                 socket_client.send_string("give me your successor")
-                new_predeccesor = socket_client.recv_json()
+                new_predecessor = socket_client.recv_json()
 
-                socket_client.disconnect("tcp://" + predeccesor_data['ip']
-                                         + ":" + predeccesor_data['port'])
+                socket_client.disconnect("tcp://" + predecessor_data['ip']
+                                         + ":" + predecessor_data['port'])
 
-                predeccesor_data['ip'] = new_predeccesor['ip']
-                predeccesor_data['port'] = new_predeccesor['port']
-                predeccesor_data['id'] = new_predeccesor['id']
+                predecessor_data['ip'] = new_predecessor['ip']
+                predecessor_data['port'] = new_predecessor['port']
+                predecessor_data['id'] = new_predecessor['id']
 
         print("My id is : " + str(node_data['id']))
         print("My succesor is : " + str(succesor_data['id']))
-        print("My predeccesor is : " + str(predeccesor_data['id']))
+        print("My predecessor is : " + str(predecessor_data['id']))
 
         exit = input("Do you want to get out of the ring? yes/no \n")
         if exit == "yes":
-            #update predeccesor_data in my successor
+            #update predecessor_data in my successor
             socket_client.connect("tcp://" + succesor_data['ip'] + ":" + succesor_data['port'])
             message = {'request': "Update your predecessor"}
             socket_client.send_json(message)
             answer = socket_client.recv_string()
 
             if answer == "Ok, send me your data":
-                socket_client.send_json(predeccesor_data)
+                socket_client.send_json(predecessor_data)
                 ok = socket_client.recv_string()
                 socket_client.disconnect("tcp://" + succesor_data['ip'] + ":" + succesor_data['port'])
 
             #update succesor_data in my predecessor
-            socket_client.connect("tcp://" + predeccesor_data['ip'] + ":" + predeccesor_data['port'])
+            socket_client.connect("tcp://" + predecessor_data['ip'] + ":" + predecessor_data['port'])
             message = {'request': "Update your successor"}
             socket_client.send_json(message)
             answer = socket_client.recv_string()
@@ -167,7 +167,7 @@ def main():
             if answer == "Ok, send me your data":
                 socket_client.send_json(succesor_data)
                 ok = socket_client.recv_string()
-                socket_client.disconnect("tcp://" + predeccesor_data['ip'] + ":" + predeccesor_data['port'])
+                socket_client.disconnect("tcp://" + predecessor_data['ip'] + ":" + predecessor_data['port'])
 
             print("Good bye")
             os._exit(0)
