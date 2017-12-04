@@ -4,8 +4,19 @@ import sys
 import threading
 import zmq
 import os
+import math
+#9645
 
-stop = False
+
+space_keys = 16
+m = int(math.log2(space_keys))
+
+def generate_finger(node_id):
+ 	finger = {}
+ 	for i in range(0,m):
+        key = (node_id + (2 ** i)) % space_keys
+ 		finger[key] = {}
+ 	return(finger)
 
 def generate_id():
     id = random.randrange(15)
@@ -14,7 +25,7 @@ def generate_id():
 def server(socket_server, node_data, succesor_data, predecessor_data):
     socket_server.bind('tcp://*:' + node_data['port'])
 
-    while not stop:
+    while True:
         request = socket_server.recv_json()
         if request['request'] == "join the ring":
             if (request['id'] >= node_data['id']) and (request['id'] <= succesor_data['id']):
@@ -83,6 +94,7 @@ def main():
         node_data = { 'ip': sys.argv[1], 'port': sys.argv[2], 'id': generate_id()}
         succesor_data = {'ip': sys.argv[1], 'port': sys.argv[2], 'id': node_data['id']}
         predecessor_data = {'ip': sys.argv[1], 'port': sys.argv[2], 'id': node_data['id']}
+        finger_table = generate_finger(node_data['id'])
         joined = True
 
     if len(sys.argv) == 5:
@@ -90,6 +102,7 @@ def main():
         node_data = {'ip': sys.argv[1], 'port': sys.argv[2], 'id': generate_id()}
         succesor_data = {}
         predecessor_data = {'ip': sys.argv[3], 'port': sys.argv[4]}
+        finger_table = generate_finger(node_data['id'])
         joined = False
 
     context = zmq.Context()
@@ -141,9 +154,28 @@ def main():
                 predecessor_data['port'] = new_predecessor['port']
                 predecessor_data['id'] = new_predecessor['id']
 
+        found = False
+        for key in finger_table:
+            connection_id = succesor_data['id']
+            connection_ip = succesor_data['ip']
+            connection_port = succesor_data['port']
+            while not found:
+                if key < id_succesor:
+                    finger_table[key]['id'] = connection_id
+                    finger_table[key]['ip'] = connection_ip
+                    finger_table[key]['port'] = connection_port
+                    found = True  
+                else:
+                    socket_client.connect("tcp://" + connection_ip + ":" + connection_port)
+                    message = {'request': "Give me the data of your successor"}
+                    socket_client.send_json(message)
+                    answer = socket_client.recv_json()
+                    connection_id = answer['id']
+
         print("My id is : " + str(node_data['id']))
         print("My succesor is : " + str(succesor_data['id']))
         print("My predecessor is : " + str(predecessor_data['id']))
+        print(finger_table)
 
         exit = input("Do you want to get out of the ring? yes/no \n")
         if exit == "yes":
