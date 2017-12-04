@@ -12,11 +12,11 @@ space_keys = 16
 m = int(math.log2(space_keys))
 
 def generate_finger(node_id):
- 	finger = {}
- 	for i in range(0,m):
-        key = (node_id + (2 ** i)) % space_keys
- 		finger[key] = {}
- 	return(finger)
+    finger = {}
+    for i in range(0,m):
+        key = (node_id + (2 ** i)) % (space_keys)
+        finger[key] = {}
+    return(finger)
 
 def generate_id():
     id = random.randrange(15)
@@ -87,6 +87,9 @@ def server(socket_server, node_data, succesor_data, predecessor_data):
             succesor_data['port'] = new_succesor['port']
             succesor_data['id'] = new_succesor['id']
 
+        if request['request'] == "Give me the data of your successor":
+            socket_server.send_json(succesor_data)
+
 
 def main():
     if len(sys.argv) == 3:
@@ -154,23 +157,36 @@ def main():
                 predecessor_data['port'] = new_predecessor['port']
                 predecessor_data['id'] = new_predecessor['id']
 
-        found = False
+        # Finger table, cuando el nodo entra por primera vez.
         for key in finger_table:
+            found = False
             connection_id = succesor_data['id']
             connection_ip = succesor_data['ip']
             connection_port = succesor_data['port']
+            print("mi id: " + str(node_data['id']))
+            print("connection id: " + str(connection_id))
+            print("Key : " + str(key))
             while not found:
-                if key < id_succesor:
+                if key <= connection_id or connection_id == node_data['id']:
+                    print("si")
                     finger_table[key]['id'] = connection_id
                     finger_table[key]['ip'] = connection_ip
                     finger_table[key]['port'] = connection_port
-                    found = True  
+                    socket_client.connect("tcp://" + connection_ip + ":" + connection_port)
+                    found = True
+                    print("Connected")
                 else:
                     socket_client.connect("tcp://" + connection_ip + ":" + connection_port)
                     message = {'request': "Give me the data of your successor"}
                     socket_client.send_json(message)
+                    # print("Estoy recibiendo una respuesta")
                     answer = socket_client.recv_json()
+                    # print("Ya recibi una respuesta")
                     connection_id = answer['id']
+                    connection_ip = answer['ip']
+                    connection_port = answer['port']
+
+            socket_client.disconnect("tcp://" + connection_ip + ":" + connection_port)
 
         print("My id is : " + str(node_data['id']))
         print("My succesor is : " + str(succesor_data['id']))
