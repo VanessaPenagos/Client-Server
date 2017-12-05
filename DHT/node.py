@@ -22,6 +22,41 @@ def generate_id():
     id = random.randrange(15)
     return id
 
+def update_finger(finger_table, succesor_data, node_data):
+
+    context = zmq.Context()    
+    socket_stabilization = context.socket(zmq.REQ)
+
+    for key in finger_table:
+        found = False
+        connection_id = succesor_data['id']
+        connection_ip = succesor_data['ip']
+        connection_port = succesor_data['port']
+        print("mi id: " + str(node_data['id']))
+        print("connection id: " + str(connection_id))
+        print("Key : " + str(key))
+        while not found:
+            if key <= connection_id or connection_id == node_data['id']:
+                print("si")
+                finger_table[key]['id'] = connection_id
+                finger_table[key]['ip'] = connection_ip
+                finger_table[key]['port'] = connection_port
+                socket_stabilization.connect("tcp://" + connection_ip + ":" + connection_port)
+                found = True
+                print("Connected")
+            else:
+                socket_stabilization.connect("tcp://" + connection_ip + ":" + connection_port)
+                message = {'request': "Give me the data of your successor"}
+                socket_client.send_json(message)
+                # print("Estoy recibiendo una respuesta")
+                answer = socket_client.recv_json()
+                # print("Ya recibi una respuesta")
+                connection_id = answer['id']
+                connection_ip = answer['ip']
+                connection_port = answer['port']
+
+        socket_stabilization.disconnect("tcp://" + connection_ip + ":" + connection_port)
+
 def server(socket_server, node_data, succesor_data, predecessor_data):
     socket_server.bind('tcp://*:' + node_data['port'])
 
@@ -90,7 +125,6 @@ def server(socket_server, node_data, succesor_data, predecessor_data):
         if request['request'] == "Give me the data of your successor":
             socket_server.send_json(succesor_data)
 
-
 def main():
     if len(sys.argv) == 3:
         my_address = (sys.argv[1] + sys.argv[2]).encode('utf-8')
@@ -113,7 +147,7 @@ def main():
     socket_server = context.socket(zmq.REP)
     thread_server = threading.Thread(target=server, args=(socket_server, node_data,succesor_data,predecessor_data,))
     thread_server.start()
-
+    
     # Cliente
     while True:
         while not joined:
