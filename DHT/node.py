@@ -5,6 +5,7 @@ import threading
 import zmq
 import os
 import math
+from time import sleep
 
 
 space_keys = 16
@@ -25,26 +26,27 @@ def generate_id():
 
 
 def update_finger(finger_table, succesor_data, node_data, start_node):
-    context = zmq.Context()    
+    context = zmq.Context()
     socket_stabilization = context.socket(zmq.REQ)
-    
+
     for key in finger_table:
         found = False
         connection_id = succesor_data['id']
         connection_ip = succesor_data['ip']
         connection_port = succesor_data['port']
-        print("mi id: " + str(node_data['id']))
-        print("connection id: " + str(connection_id))
-        print("Key : " + str(key))
         while not found:
             if key <= connection_id or connection_id == node_data['id']:
-                print("si")
                 finger_table[key]['id'] = connection_id
                 finger_table[key]['ip'] = connection_ip
                 finger_table[key]['port'] = connection_port
                 socket_stabilization.connect("tcp://" + connection_ip + ":" + connection_port)
                 found = True
-                print("Connected")
+            elif connection_id <= node_data['id']:
+                finger_table[key]['id'] = connection_id
+                finger_table[key]['ip'] = connection_ip
+                finger_table[key]['port'] = connection_port
+                socket_stabilization.connect("tcp://" + connection_ip + ":" + connection_port)
+                found = True
             else:
                 socket_stabilization.connect("tcp://" + connection_ip + ":" + connection_port)
                 message = {'request': "Give me the data of your successor"}
@@ -55,16 +57,17 @@ def update_finger(finger_table, succesor_data, node_data, start_node):
                 connection_port = answer['port']
 
         socket_stabilization.disconnect("tcp://" + connection_ip + ":" + connection_port)
-    
+
     socket_stabilization.connect("tcp://" + succesor_data['ip'] + ":" + succesor_data['port'])
     message = {
-        'request': 'Update your finger table', 
+        'request': 'Update your finger table',
         'start_node': start_node
         }
     socket_stabilization.send_json(message)
     answer = socket_stabilization.recv_string()
 
     socket_stabilization.disconnect("tcp://" + succesor_data['ip'] + ":" + succesor_data['port'])
+    sleep(2)
 
 
 def server(socket_server, node_data, succesor_data, predecessor_data, finger_table):
@@ -72,7 +75,6 @@ def server(socket_server, node_data, succesor_data, predecessor_data, finger_tab
 
     while True:
         request = socket_server.recv_json()
-        print(request, "Voy en el nodo",node_data['id'])
         if request['request'] == "join the ring":
             if (request['id'] >= node_data['id']) and (request['id'] <= succesor_data['id']):
                 socket_server.send_string("yes")
@@ -111,7 +113,6 @@ def server(socket_server, node_data, succesor_data, predecessor_data, finger_tab
                     succesor_data['id'] = new_succesor['id']
 
             else:
-                print("Es el else //No")
                 socket_server.send_string("no")
                 message = socket_server.recv_string()
                 if (message == "give me your successor"):
@@ -139,13 +140,13 @@ def server(socket_server, node_data, succesor_data, predecessor_data, finger_tab
         if request['request'] == "Update your finger table":
             start_node = request['start_node']
             if start_node != node_data['id']:
-                thread_stabilization = threading.Thread(target=update_finger, args=(finger_table, succesor_data, node_data, start_node,))
+                thread_stabilization = threading.Thread(target=update_finger, args=(finger_table, succesor_data, node_data, start_node,), name='Daemon')
+                thread_stabilization.setDaemon(True)
                 thread_stabilization.start()
                 socket_server.send_string("Updated")
                 thread_stabilization.join()
             else:
-                socket_server.send_string("Finish")               
-            print(finger_table)
+                socket_server.send_string("Finish")
 
 
 def main():
@@ -170,7 +171,7 @@ def main():
     socket_server = context.socket(zmq.REP)
     thread_server = threading.Thread(target=server, args=(socket_server, node_data, succesor_data, predecessor_data, finger_table,))
     thread_server.start()
-    
+
     # Cliente
     while True:
         while not joined:
@@ -198,13 +199,12 @@ def main():
                 if answer == "Ok, send me your data":
                     socket_client.send_json(node_data)
                     ok = socket_client.recv_string()
-                    message = {'request': "Update your finger table", 'start_node': node_data['id']}   
+                    message = {'request': "Update your finger table", 'start_node': node_data['id']}
                     socket_client.send_json(message)
                     ok = socket_client.recv_string()
                     socket_client.disconnect("tcp://" + succesor_data['ip'] + ":" + succesor_data['port'])
 
                 joined = True
-                print("I joined in this node")
 
             if answer == 'no':
                 socket_client.send_string("give me your successor")
@@ -223,18 +223,19 @@ def main():
             connection_id = succesor_data['id']
             connection_ip = succesor_data['ip']
             connection_port = succesor_data['port']
-            print("mi id: " + str(node_data['id']))
-            print("connection id: " + str(connection_id))
-            print("Key : " + str(key))
             while not found:
                 if key <= connection_id or connection_id == node_data['id']:
-                    print("si")
                     finger_table[key]['id'] = connection_id
                     finger_table[key]['ip'] = connection_ip
                     finger_table[key]['port'] = connection_port
                     socket_client.connect("tcp://" + connection_ip + ":" + connection_port)
                     found = True
-                    print("Connected")
+                elif connection_id <= node_data['id']:
+                    finger_table[key]['id'] = connection_id
+                    finger_table[key]['ip'] = connection_ip
+                    finger_table[key]['port'] = connection_port
+                    socket_client.connect("tcp://" + connection_ip + ":" + connection_port)
+                    found = True
                 else:
                     socket_client.connect("tcp://" + connection_ip + ":" + connection_port)
                     message = {'request': "Give me the data of your successor"}
@@ -249,36 +250,34 @@ def main():
             socket_client.disconnect("tcp://" + connection_ip + ":" + connection_port)
 
         print("My id is : " + str(node_data['id']))
-        print("My succesor is : " + str(succesor_data['id']))
-        print("My predecessor is : " + str(predecessor_data['id']))
-        print(finger_table)
-
+        print("--------------------------------------------------------")
         exit = input("Do you want to get out of the ring? yes/no \n")
         if exit == "yes":
             # update predecessor_data in my successor
-            socket_client.connect("tcp://" + succesor_data['ip'] + ":" + succesor_data['port'])
-            message = {'request': "Update your predecessor"}
-            socket_client.send_json(message)
-            answer = socket_client.recv_string()
-
-            if answer == "Ok, send me your data":
-                socket_client.send_json(predecessor_data)
-                ok = socket_client.recv_string()
-                socket_client.disconnect("tcp://" + succesor_data['ip'] + ":" + succesor_data['port'])
-
-            # update succesor_data in my predecessor
-            socket_client.connect("tcp://" + predecessor_data['ip'] + ":" + predecessor_data['port'])
-            message = {'request': "Update your successor"}
-            socket_client.send_json(message)
-            answer = socket_client.recv_string()
-
-            if answer == "Ok, send me your data":
-                socket_client.send_json(succesor_data)
-                ok = socket_client.recv_string()
-                message = {'request': "Update your finger table", 'start_node': node_data['id']}   
+            if node_data['id'] != succesor_data['id']:
+                socket_client.connect("tcp://" + succesor_data['ip'] + ":" + succesor_data['port'])
+                message = {'request': "Update your predecessor"}
                 socket_client.send_json(message)
-                ok = socket_client.recv_string()
-                socket_client.disconnect("tcp://" + predecessor_data['ip'] + ":" + predecessor_data['port'])
+                answer = socket_client.recv_string()
+
+                if answer == "Ok, send me your data":
+                    socket_client.send_json(predecessor_data)
+                    ok = socket_client.recv_string()
+                    socket_client.disconnect("tcp://" + succesor_data['ip'] + ":" + succesor_data['port'])
+
+                # update succesor_data in my predecessor
+                socket_client.connect("tcp://" + predecessor_data['ip'] + ":" + predecessor_data['port'])
+                message = {'request': "Update your successor"}
+                socket_client.send_json(message)
+                answer = socket_client.recv_string()
+
+                if answer == "Ok, send me your data":
+                    socket_client.send_json(succesor_data)
+                    ok = socket_client.recv_string()
+                    message = {'request': "Update your finger table", 'start_node': node_data['id']}
+                    socket_client.send_json(message)
+                    ok = socket_client.recv_string()
+                    socket_client.disconnect("tcp://" + predecessor_data['ip'] + ":" + predecessor_data['port'])
 
             print("Good bye")
             os._exit(0)
