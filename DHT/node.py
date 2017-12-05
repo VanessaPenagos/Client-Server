@@ -5,28 +5,29 @@ import threading
 import zmq
 import os
 import math
-#9645
 
 
 space_keys = 16
 m = int(math.log2(space_keys))
 
+
 def generate_finger(node_id):
     finger = {}
-    for i in range(0,m):
+    for i in range(0, m):
         key = (node_id + (2 ** i)) % (space_keys)
         finger[key] = {}
     return(finger)
+
 
 def generate_id():
     id = random.randrange(15)
     return id
 
-def update_finger(finger_table, succesor_data, node_data):
 
+def update_finger(finger_table, succesor_data, node_data, start_node):
     context = zmq.Context()    
     socket_stabilization = context.socket(zmq.REQ)
-
+    
     for key in finger_table:
         found = False
         connection_id = succesor_data['id']
@@ -47,21 +48,31 @@ def update_finger(finger_table, succesor_data, node_data):
             else:
                 socket_stabilization.connect("tcp://" + connection_ip + ":" + connection_port)
                 message = {'request': "Give me the data of your successor"}
-                socket_client.send_json(message)
-                # print("Estoy recibiendo una respuesta")
-                answer = socket_client.recv_json()
-                # print("Ya recibi una respuesta")
+                socket_stabilization.send_json(message)
+                answer = socket_stabilization.recv_json()
                 connection_id = answer['id']
                 connection_ip = answer['ip']
                 connection_port = answer['port']
 
         socket_stabilization.disconnect("tcp://" + connection_ip + ":" + connection_port)
+    
+    socket_stabilization.connect("tcp://" + succesor_data['ip'] + ":" + succesor_data['port'])
+    message = {
+        'request': 'Update your finger table', 
+        'start_node': start_node
+        }
+    socket_stabilization.send_json(message)
+    answer = socket_stabilization.recv_string()
 
-def server(socket_server, node_data, succesor_data, predecessor_data):
+    socket_stabilization.disconnect("tcp://" + succesor_data['ip'] + ":" + succesor_data['port'])
+
+
+def server(socket_server, node_data, succesor_data, predecessor_data, finger_table):
     socket_server.bind('tcp://*:' + node_data['port'])
 
     while True:
         request = socket_server.recv_json()
+        print(request, "Voy en el nodo",node_data['id'])
         if request['request'] == "join the ring":
             if (request['id'] >= node_data['id']) and (request['id'] <= succesor_data['id']):
                 socket_server.send_string("yes")
@@ -125,6 +136,18 @@ def server(socket_server, node_data, succesor_data, predecessor_data):
         if request['request'] == "Give me the data of your successor":
             socket_server.send_json(succesor_data)
 
+        if request['request'] == "Update your finger table":
+            start_node = request['start_node']
+            if start_node != node_data['id']:
+                thread_stabilization = threading.Thread(target=update_finger, args=(finger_table, succesor_data, node_data, start_node,))
+                thread_stabilization.start()
+                socket_server.send_string("Updated")
+                thread_stabilization.join()
+            else:
+                socket_server.send_string("Finish")               
+            print(finger_table)
+
+
 def main():
     if len(sys.argv) == 3:
         my_address = (sys.argv[1] + sys.argv[2]).encode('utf-8')
@@ -145,7 +168,7 @@ def main():
     context = zmq.Context()
     socket_client = context.socket(zmq.REQ)
     socket_server = context.socket(zmq.REP)
-    thread_server = threading.Thread(target=server, args=(socket_server, node_data,succesor_data,predecessor_data,))
+    thread_server = threading.Thread(target=server, args=(socket_server, node_data, succesor_data, predecessor_data, finger_table,))
     thread_server.start()
     
     # Cliente
@@ -174,6 +197,9 @@ def main():
 
                 if answer == "Ok, send me your data":
                     socket_client.send_json(node_data)
+                    ok = socket_client.recv_string()
+                    message = {'request': "Update your finger table", 'start_node': node_data['id']}   
+                    socket_client.send_json(message)
                     ok = socket_client.recv_string()
                     socket_client.disconnect("tcp://" + succesor_data['ip'] + ":" + succesor_data['port'])
 
@@ -229,7 +255,7 @@ def main():
 
         exit = input("Do you want to get out of the ring? yes/no \n")
         if exit == "yes":
-            #update predecessor_data in my successor
+            # update predecessor_data in my successor
             socket_client.connect("tcp://" + succesor_data['ip'] + ":" + succesor_data['port'])
             message = {'request': "Update your predecessor"}
             socket_client.send_json(message)
@@ -240,7 +266,7 @@ def main():
                 ok = socket_client.recv_string()
                 socket_client.disconnect("tcp://" + succesor_data['ip'] + ":" + succesor_data['port'])
 
-            #update succesor_data in my predecessor
+            # update succesor_data in my predecessor
             socket_client.connect("tcp://" + predecessor_data['ip'] + ":" + predecessor_data['port'])
             message = {'request': "Update your successor"}
             socket_client.send_json(message)
@@ -249,9 +275,13 @@ def main():
             if answer == "Ok, send me your data":
                 socket_client.send_json(succesor_data)
                 ok = socket_client.recv_string()
+                message = {'request': "Update your finger table", 'start_node': node_data['id']}   
+                socket_client.send_json(message)
+                ok = socket_client.recv_string()
                 socket_client.disconnect("tcp://" + predecessor_data['ip'] + ":" + predecessor_data['port'])
 
             print("Good bye")
             os._exit(0)
+
 
 main()
