@@ -63,11 +63,11 @@ def update_finger(finger_table, succesor_data, node_data, start_node):
         'request': 'Update your finger table',
         'start_node': start_node
         }
+    sleep(2)
     socket_stabilization.send_json(message)
     answer = socket_stabilization.recv_string()
 
     socket_stabilization.disconnect("tcp://" + succesor_data['ip'] + ":" + succesor_data['port'])
-    sleep(2)
 
 
 def server(socket_server, node_data, succesor_data, predecessor_data, finger_table):
@@ -121,10 +121,16 @@ def server(socket_server, node_data, succesor_data, predecessor_data, finger_tab
         if request['request'] == "Update your predecessor":
             socket_server.send_string("Ok, send me your data")
             new_predecessor = socket_server.recv_json()
+            print("new predecessor: ")
+            print(new_predecessor)
+            print("-----------------------------------------")
+            print(predecessor_data)
             socket_server.send_string("ok")
             predecessor_data['ip'] = new_predecessor['ip']
             predecessor_data['port'] = new_predecessor['port']
             predecessor_data['id'] = new_predecessor['id']
+            # print(predecessor_data)
+
 
         if request['request'] == "Update your successor":
             socket_server.send_string("Ok, send me your data")
@@ -249,12 +255,15 @@ def main():
 
             socket_client.disconnect("tcp://" + connection_ip + ":" + connection_port)
 
+        print(predecessor_data)
         print("My id is : " + str(node_data['id']))
+        print(succesor_data)
         print("--------------------------------------------------------")
         exit = input("Do you want to get out of the ring? yes/no \n")
         if exit == "yes":
             # update predecessor_data in my successor
             if node_data['id'] != succesor_data['id']:
+                print(succesor_data)
                 socket_client.connect("tcp://" + succesor_data['ip'] + ":" + succesor_data['port'])
                 message = {'request': "Update your predecessor"}
                 socket_client.send_json(message)
